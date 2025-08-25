@@ -90,8 +90,13 @@ class LocationService {
   }
 
   // 위치 에러 콜백
-  void _onLocationError(LocationSettingsException error) {
+  void _onLocationError(Object error) {
     print('위치 추적 에러: $error');
+    if (error is PermissionDeniedException) {
+      // 권한 안내
+    } else if (error is LocationServiceDisabledException) {
+      // 위치 서비스 안내
+    }
   }
 
   // Firebase에 위치 저장
@@ -136,7 +141,7 @@ class LocationService {
     // 실제 구현에서는 고유한 디바이스 ID를 사용해야 합니다
     return 'device_${DateTime.now().millisecondsSinceEpoch}';
   }
-  
+
   // 디바이스 ID 가져오기 (public 메서드)
   Future<String> getDeviceId() async {
     return await _getDeviceId();
@@ -170,7 +175,7 @@ class LocationService {
   Future<bool> get isLocationServiceEnabled async {
     return await Geolocator.isLocationServiceEnabled();
   }
-  
+
   // Firestore에서 위치 추적 데이터를 실시간으로 가져오는 스트림
   Stream<QuerySnapshot> getLocationTracksStream() {
     return _firestore
@@ -178,7 +183,7 @@ class LocationService {
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
-  
+
   // 특정 디바이스의 위치 추적 데이터를 실시간으로 가져오는 스트림
   Stream<QuerySnapshot> getDeviceLocationTracksStream(String deviceId) {
     return _firestore
@@ -187,12 +192,12 @@ class LocationService {
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
-  
+
   // 위치 추적 데이터를 날짜별로 필터링하여 가져오는 스트림
   Stream<QuerySnapshot> getLocationTracksByDateStream(DateTime date) {
     DateTime startOfDay = DateTime(date.year, date.month, date.day);
     DateTime endOfDay = startOfDay.add(const Duration(days: 1));
-    
+
     return _firestore
         .collection('location_tracks')
         .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
@@ -200,7 +205,7 @@ class LocationService {
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
-  
+
   // 위치 추적 데이터 추가
   Future<void> addLocationTrack(Map<String, dynamic> locationData) async {
     try {
@@ -215,7 +220,7 @@ class LocationService {
       rethrow;
     }
   }
-  
+
   // 위치 추적 데이터 삭제
   Future<void> deleteLocationTrack(String documentId) async {
     try {
@@ -226,9 +231,12 @@ class LocationService {
       rethrow;
     }
   }
-  
+
   // 위치 추적 데이터 업데이트
-  Future<void> updateLocationTrack(String documentId, Map<String, dynamic> updateData) async {
+  Future<void> updateLocationTrack(
+    String documentId,
+    Map<String, dynamic> updateData,
+  ) async {
     try {
       await _firestore.collection('location_tracks').doc(documentId).update({
         ...updateData,
@@ -240,7 +248,7 @@ class LocationService {
       rethrow;
     }
   }
-  
+
   // 위치 추적 데이터 일괄 삭제 (특정 디바이스)
   Future<void> deleteDeviceLocationTracks(String deviceId) async {
     try {
@@ -248,12 +256,12 @@ class LocationService {
           .collection('location_tracks')
           .where('device_id', isEqualTo: deviceId)
           .get();
-      
+
       final batch = _firestore.batch();
       for (final doc in querySnapshot.docs) {
         batch.delete(doc.reference);
       }
-      
+
       await batch.commit();
       print('디바이스 위치 추적 데이터 일괄 삭제 완료');
     } catch (e) {
@@ -261,21 +269,24 @@ class LocationService {
       rethrow;
     }
   }
-  
+
   // 위치 추적 데이터 일괄 삭제 (특정 날짜 범위)
-  Future<void> deleteLocationTracksByDateRange(DateTime startDate, DateTime endDate) async {
+  Future<void> deleteLocationTracksByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
     try {
       final querySnapshot = await _firestore
           .collection('location_tracks')
           .where('timestamp', isGreaterThanOrEqualTo: startDate)
           .where('timestamp', isLessThan: endDate)
           .get();
-      
+
       final batch = _firestore.batch();
       for (final doc in querySnapshot.docs) {
         batch.delete(doc.reference);
       }
-      
+
       await batch.commit();
       print('날짜 범위 위치 추적 데이터 일괄 삭제 완료');
     } catch (e) {
