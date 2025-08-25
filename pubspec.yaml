@@ -1,4 +1,4 @@
-name: mhap
+name: whatapp
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -34,6 +34,20 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  
+  # GPS 위치 추적
+  geolocator: ^11.0.0
+  
+  # Firebase 관련 패키지들
+  firebase_core: ^3.6.0
+  
+  # 실시간 위치 업데이트를 위한 스트림
+  stream_transform: ^2.1.0
+  
+  # 권한 처리
+  permission_handler: ^11.3.1
+  cloud_firestore: ^5.6.12
+  firebase_auth: ^5.7.0
 
 dev_dependencies:
   flutter_test:
