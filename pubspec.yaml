@@ -40,7 +40,7 @@ dependencies:
   
   # Firebase 관련 패키지들
   firebase_core: ^3.6.0
-  firebase_firestore: ^5.4.0
+  cloud_firestore: ^5.4.0
   firebase_auth: ^5.3.0
   
   # 실시간 위치 업데이트를 위한 스트림
