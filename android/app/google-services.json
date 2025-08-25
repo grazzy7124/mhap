@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1038389858842",
+    "project_id": "whatapp-4a56b",
+    "storage_bucket": "whatapp-4a56b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1038389858842:android:8ae40aa3ca446e93b977a3",
+        "android_client_info": {
+          "package_name": "com.whatapp.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9P9jOPK-JwkueDELVDqK8SUP_I8TpmpY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
