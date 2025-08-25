@@ -40,14 +40,14 @@ dependencies:
   
   # Firebase 관련 패키지들
   firebase_core: ^3.6.0
-  firebase_firestore: ^5.4.0
-  firebase_auth: ^5.3.0
   
   # 실시간 위치 업데이트를 위한 스트림
   stream_transform: ^2.1.0
   
   # 권한 처리
   permission_handler: ^11.3.1
+  cloud_firestore: ^5.6.12
+  firebase_auth: ^5.7.0
 
 dev_dependencies:
   flutter_test:
