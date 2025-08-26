@@ -11,7 +11,7 @@ android {
     
     ndkVersion = "27.0.12077973"
     namespace = "com.example.whatapp"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
