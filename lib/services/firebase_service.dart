@@ -1,93 +1,131 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// lib/services/firebase_service.dart
+import 'dart:convert';
+import 'dart:math';
 
-/// FirebaseService
-///
-/// Firebase 초기화/인스턴스 접근, 인증(FirebaseAuth)과
-/// Cloud Firestore에 방문 장소를 저장/조회하는 헬퍼입니다.
-/// - initialize(): 앱 전체에서 1회 초기화를 권장합니다
-/// - authStateChanges/currentUser: 인증 상태 스트림/현재 사용자
-/// - saveVisitedPlace(): 내 방문 장소 추가
-/// - getVisitedPlaces(): 내 방문 장소 스트림
-/// - getFriendsVisitedPlaces(): 친구들(모든 사용자) 방문 장소 스트림 예시
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+// google_sign_in 패키지 없이 Firebase Auth의 OAuth Provider 사용
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+/// FirebaseService: Firebase 초기화 + 인증 전용
+/// - initialize()
+/// - authStateChanges/currentUser/signOut()
+/// - signInWithGoogle(), signInWithApple()
+/// - ensureUserProfile(): users/{uid} 생성/갱신
 class FirebaseService {
   static FirebaseFirestore? _firestore;
   static FirebaseAuth? _auth;
 
-  /// Firestore 인스턴스(지연 초기화)
-  static FirebaseFirestore get firestore {
-    _firestore ??= FirebaseFirestore.instance;
-    return _firestore!;
+  static FirebaseFirestore get firestore =>
+      _firestore ??= FirebaseFirestore.instance;
+
+  static FirebaseAuth get auth => _auth ??= FirebaseAuth.instance;
+
+  static Future<void> initialize({FirebaseOptions? options}) async {
+    await Firebase.initializeApp(options: options);
   }
 
-  /// Auth 인스턴스(지연 초기화)
-  static FirebaseAuth get auth {
-    _auth ??= FirebaseAuth.instance;
-    return _auth!;
-  }
-
-  /// Firebase 초기화(앱 당 1회 권장)
-  static Future<void> initialize() async {
-    await Firebase.initializeApp();
-  }
-
-  /// 인증 상태 스트림(로그인/로그아웃 이벤트 수신)
   static Stream<User?> get authStateChanges => auth.authStateChanges();
 
-  /// 현재 로그인 사용자
   static User? get currentUser => auth.currentUser;
 
-  /// 익명 로그인(예시)
-  static Future<UserCredential> signInAnonymously() async {
-    return await auth.signInAnonymously();
-  }
+  static Future<void> signOut() => auth.signOut();
 
-  /// 로그아웃
-  static Future<void> signOut() async {
-    await auth.signOut();
-  }
-
-  /// 방문한 장소 저장
-  /// - 사용자별 하위 컬렉션(users/{uid}/visited_places)에 추가합니다.
-  static Future<void> saveVisitedPlace({
-    required String name,
-    required double latitude,
-    required double longitude,
-    required String imageUrl,
-    String? description,
-  }) async {
-    final user = currentUser;
-    if (user == null) return;
-
-    await firestore.collection('users').doc(user.uid).collection('visited_places').add({
-      'name': name,
-      'latitude': latitude,
-      'longitude': longitude,
-      'imageUrl': imageUrl,
-      'description': description,
-      'timestamp': FieldValue.serverTimestamp(),
+  // ----------------------------
+  // Google Login
+  // ----------------------------
+  static Future<UserCredential> signInWithGoogle() async {
+    // Firebase Auth의 GoogleAuthProvider로 직접 로그인
+    final googleProvider = GoogleAuthProvider();
+    googleProvider.setCustomParameters({
+      'prompt': 'select_account',
     });
+
+    final userCred = await auth.signInWithProvider(googleProvider);
+    await ensureUserProfile(userCred.user);
+    return userCred;
   }
 
-  /// 내 방문한 장소 스트림(최신순)
-  static Stream<QuerySnapshot> getVisitedPlaces() {
-    final user = currentUser;
-    if (user == null) {
-      return Stream.empty();
+  // ----------------------------
+  // Apple Login (iOS/macOS)
+  // ----------------------------
+  static Future<UserCredential> signInWithApple() async {
+    final rawNonce = _generateNonce();
+    final nonce = _sha256ofString(rawNonce);
+
+    final appleCred = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: nonce,
+    );
+
+    final oauthCred = OAuthProvider('apple.com').credential(
+      idToken: appleCred.identityToken,
+      rawNonce: rawNonce,
+    );
+
+    final userCred = await auth.signInWithCredential(oauthCred);
+
+    final user = userCred.user;
+    // 최초 로그인 시 표시명 비어있으면 보완
+    if (user != null && (user.displayName == null || user.displayName!.isEmpty)) {
+      final fn = appleCred.givenName ?? '';
+      final ln = appleCred.familyName ?? '';
+      final name = (fn + ' ' + ln).trim();
+      if (name.isNotEmpty) {
+        await user.updateDisplayName(name);
+      }
     }
 
-    return firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('visited_places')
-        .orderBy('timestamp', descending: true)
-        .snapshots();
+    await ensureUserProfile(userCred.user);
+    return userCred;
   }
 
-  /// 친구들의 방문 장소 스트림(데모용):
-  /// - 실제 서비스에서는 친구 관계 컬렉션을 조인/필터링하세요.
-  static Stream<QuerySnapshot> getFriendsVisitedPlaces() {
-    return firestore.collection('users').snapshots();
+  // ----------------------------
+  // users/{uid} 프로필 생성/업데이트
+  // ----------------------------
+  static Future<void> ensureUserProfile(User? user) async {
+    if (user == null) return;
+
+    final ref = firestore.collection('users').doc(user.uid);
+    final snap = await ref.get();
+
+    final now = FieldValue.serverTimestamp();
+    final data = <String, dynamic>{
+      'displayName': user.displayName ?? '',
+      'photoURL': user.photoURL,
+      'updatedAt': now,
+    };
+
+    if (snap.exists) {
+      await ref.set(data, SetOptions(merge: true));
+    } else {
+      await ref.set({
+        ...data,
+        'friendCount': 0,
+        'incomingRequestCount': 0,
+        'createdAt': now,
+      }, SetOptions(merge: true));
+    }
+  }
+
+  // ----------------------------
+  // Apple nonce helpers
+  // ----------------------------
+  static String _generateNonce([int length = 32]) {
+    const chars =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final rand = Random.secure();
+    return List.generate(length, (_) => chars[rand.nextInt(chars.length)]).join();
+  }
+
+  static String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 }
