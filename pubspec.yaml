@@ -48,6 +48,25 @@ dependencies:
   
   # 권한 처리
   permission_handler: ^11.3.1
+  
+  # 이미지 처리 및 카메라
+  image_picker: ^1.0.7
+  camera: ^0.10.5+9
+  
+  # 상태 관리
+  provider: ^6.1.1
+  
+  # 네비게이션
+  go_router: ^13.2.0
+  
+  # 이미지 캐싱
+  cached_network_image: ^3.3.1
+  
+  # 로컬 저장소
+  shared_preferences: ^2.2.2
+  
+  # 애니메이션
+  lottie: ^3.0.0
 
 dev_dependencies:
   flutter_test:
