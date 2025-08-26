@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'onboarding_screen.dart';
 
 /// 스플래시 화면
-/// 
-/// 이 화면은 앱이 시작된 후 사용자에게 보여지는 첫 번째 화면입니다.
-/// 주요 기능:
-/// - 앱 로고 및 브랜딩 표시
-/// - 3초간 대기 후 자동으로 온보딩 화면으로 이동
-/// - 슬라이드 애니메이션을 통한 화면 전환
+///
+/// 앱 시작 시 지구 회전 + 핀이 꽂히는 애니메이션을 보여주고
+/// 완료 후 앱 초기화 라우트('/startup')로 이동합니다.
+/// - 위치 권한 요청/조회는 스플래시에서 수행하지 않습니다(안정성 향상).
+/// - 지구 이미지는 네트워크 프리캐시로 로딩 지연을 최소화합니다.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -16,190 +14,315 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+    with TickerProviderStateMixin {
+  late AnimationController _earthRotationController;
+  late AnimationController _pinAnimationController;
+  late AnimationController _fadeController;
+
+  late Animation<double> _earthRotation;
+  late Animation<double> _pinScale;
+  late Animation<Offset> _pinPosition;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+
+  static const String _earthUrl =
+      'https://upload.wikimedia.org/wikipedia/commons/3/3f/The_Blue_Marble_%28Asia%29.jpg';
 
   @override
   void initState() {
     super.initState();
-    // 애니메이션 컨트롤러 초기화
-    _animationController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
+    _initializeAnimations();
 
-    // 페이드 인 애니메이션 (투명에서 불투명으로)
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeIn,
-    ));
-
-    // 스케일 애니메이션 (작게에서 크게로)
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
-
-    // 애니메이션 시작
-    _animationController.forward();
-
-    // 3초 후 온보딩 화면으로 자동 이동
-    _navigateToOnboarding();
+    // 첫 프레임 이후 네트워크 이미지 프리캐시 (로딩 지연 최소화)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await precacheImage(const NetworkImage(_earthUrl), context);
+      } catch (_) {}
+    });
   }
 
   @override
   void dispose() {
-    // 애니메이션 컨트롤러 정리
-    _animationController.dispose();
+    _earthRotationController.dispose();
+    _pinAnimationController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
-  /// 온보딩 화면으로 이동하는 메서드
-  /// 
-  /// 3초 후 자동으로 실행되며, 슬라이드 애니메이션과 함께
-  /// 온보딩 화면으로 이동합니다.
-  void _navigateToOnboarding() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const OnboardingScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              // 오른쪽에서 왼쪽으로 슬라이드하는 애니메이션
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(1.0, 0.0), // 오른쪽에서 시작
-                  end: Offset.zero, // 중앙으로 이동
-                ).animate(animation),
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
+  void _initializeAnimations() {
+    _earthRotationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    _earthRotation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _earthRotationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _pinAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _pinScale = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _pinAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+
+    _pinPosition = Tween<Offset>(begin: const Offset(0, -2.0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _pinAnimationController,
+            curve: Curves.bounceOut,
           ),
         );
-      }
-    });
+
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
+
+    _startAnimationSequence();
+  }
+
+  void _startAnimationSequence() async {
+    _earthRotationController.forward();
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) _pinAnimationController.forward();
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) _fadeController.forward();
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (mounted) _navigateToStartup();
+  }
+
+  void _navigateToStartup() {
+    Navigator.pushReplacementNamed(context, '/startup');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 그라데이션 배경 (초록색에서 파란색으로)
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.green,
-              Colors.blue,
-            ],
+            colors: [Color(0xFF0B1426), Color(0xFF1A1A2E), Color(0xFF16213E)],
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 애니메이션이 적용된 앱 로고
-              AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(60),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
+        child: Stack(
+          children: [
+            ..._buildStars(),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 240,
+                    height: 280,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        AnimatedBuilder(
+                          animation: _earthRotation,
+                          builder: (context, child) {
+                            return Transform.rotate(
+                              angle: _earthRotation.value * 2 * 3.14159,
+                              child: _buildEarth(),
+                            );
+                          },
                         ),
-                        child: const Icon(
-                          Icons.location_on,
-                          size: 60,
-                          color: Colors.green,
+                        Positioned(
+                          bottom: 10,
+                          child: AnimatedBuilder(
+                            animation: _pinAnimationController,
+                            builder: (context, child) {
+                              return SlideTransition(
+                                position: _pinPosition,
+                                child: ScaleTransition(
+                                  scale: _pinScale,
+                                  child: _buildPin(),
+                                ),
+                              );
+                            },
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: const Text(
+                      'Whatapp',
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 2.0,
                       ),
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(height: 28),
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 3,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 32),
-              
-              // 앱 이름 (페이드 인 애니메이션 적용)
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: const Text(
-                  'Whatapp',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildStars() {
+    final stars = <Widget>[];
+    for (int i = 0; i < 50; i++) {
+      stars.add(
+        Positioned(
+          left: (i * 37) % MediaQuery.of(context).size.width,
+          top: (i * 73) % MediaQuery.of(context).size.height,
+          child: Container(
+            width: 2,
+            height: 2,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+        ),
+      );
+    }
+    return stars;
+  }
+
+  Widget _buildEarth() {
+    const double size = 220;
+    const List<double> saturationBrightnessMatrix = <double>[
+      1.2,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.2,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.2,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      10.0,
+      10.0,
+      10.0,
+      0.0,
+      1.0,
+    ];
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(shape: BoxShape.circle),
+      child: ClipOval(
+        child: ColorFiltered(
+          colorFilter: const ColorFilter.matrix(saturationBrightnessMatrix),
+          child: Image.network(
+            _earthUrl,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return Container(
+                color: const Color(0xFF0B1426),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
                     color: Colors.white,
-                    letterSpacing: 2.0,
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              
-              // 앱 설명 (페이드 인 애니메이션 적용)
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: const Text(
-                  '친구들과 함께하는 위치 기반 사진 공유',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w300,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 48),
-              
-              // 로딩 인디케이터 (페이드 인 애니메이션 적용)
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 3,
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              // 로딩 메시지 (페이드 인 애니메이션 적용)
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: const Text(
-                  '앱을 준비하는 중...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white60,
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                decoration: const BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [Color(0xFF2A71C5), Color(0xFF174A8B)],
+                    center: Alignment(-0.2, -0.2),
+                    radius: 0.9,
                   ),
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPin() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.red,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.5),
+                blurRadius: 15,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: const Icon(Icons.location_on, color: Colors.white, size: 24),
+        ),
+        Container(
+          width: 4,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.3),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+        ),
+        Container(
+          width: 20,
+          height: 8,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ],
     );
   }
 }

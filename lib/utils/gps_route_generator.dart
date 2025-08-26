@@ -319,7 +319,7 @@ class GPSRouteGenerator {
         GPSRoutePoint(
           latitude: newLat,
           longitude: newLon,
-          name: '${areaName} 주변 ${i}',
+          name: '$areaName 주변 $i',
           timestamp: currentTime,
           accuracy: random.nextDouble() * 10 + 5,
           altitude: random.nextDouble() * 50 + 20,
