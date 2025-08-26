@@ -11,6 +11,12 @@
         android:label="whatapp"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        
+        <!-- Google Maps API 키 -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBwQqQqQqQqQqQqQqQqQqQqQqQqQqQqQq" />
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
