@@ -3,6 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+/// LocationService
+///
+/// 실시간 위치 추적을 관리하고 Firestore에 기록하는 서비스입니다.
+/// - startTracking(): 권한/서비스 확인 후 위치 스트림 구독 시작
+/// - stopTracking(): 위치 추적 중지
+/// - getCurrentLocation(): 현재 위치 1회 조회
+/// - getLocationTracksStream(): Firestore에 저장된 위치 기록 스트림
+/// - 권한 체크/백그라운드 권한(Android) 처리 포함
 class LocationService {
   static final LocationService _instance = LocationService._internal();
   factory LocationService() => _instance;
@@ -18,7 +26,9 @@ class LocationService {
   // 마지막으로 저장된 위치
   Position? _lastSavedPosition;
 
-  // 위치 추적 시작
+  /// 위치 추적 시작
+  /// - 권한/서비스 활성화 확인 후 스트림 구독
+  /// - 거리/시간 필터 기준으로 Firestore에 저장
   Future<bool> startTracking() async {
     if (_isTracking) return true;
 
@@ -51,14 +61,14 @@ class LocationService {
     }
   }
 
-  // 위치 추적 중지
+  /// 위치 추적 중지
   void stopTracking() {
     _locationSubscription?.cancel();
     _locationSubscription = null;
     _isTracking = false;
   }
 
-  // 권한 확인
+  /// 권한 확인 및 요청
   Future<bool> _checkPermissions() async {
     // 위치 권한 확인
     PermissionStatus locationStatus = await Permission.location.status;
@@ -83,12 +93,12 @@ class LocationService {
     return locationStatus.isGranted;
   }
 
-  // 위치 업데이트 콜백
+  /// 위치 업데이트 콜백
   void _onLocationUpdate(Position position) {
     _saveLocationToFirebase(position);
   }
 
-  // 위치 에러 콜백
+  /// 위치 에러 콜백
   void _onLocationError(Object error) {
     print('위치 추적 에러: $error');
     if (error is PermissionDeniedException) {
@@ -98,10 +108,10 @@ class LocationService {
     }
   }
 
-  // Firebase에 위치 저장
+  /// Firestore에 위치 저장
+  /// - 마지막 저장 지점과 10m 이상 차이날 때만 기록
   Future<void> _saveLocationToFirebase(Position position) async {
     try {
-      // 마지막 저장 위치와 비교하여 의미있는 이동이 있는지 확인
       if (_lastSavedPosition != null) {
         double distance = Geolocator.distanceBetween(
           _lastSavedPosition!.latitude,
@@ -110,13 +120,11 @@ class LocationService {
           position.longitude,
         );
 
-        // 10미터 이상 이동했을 때만 저장
         if (distance < 10) {
           return;
         }
       }
 
-      // Firestore에 위치 데이터 저장
       await _firestore.collection('location_tracks').add({
         'latitude': position.latitude,
         'longitude': position.longitude,
@@ -135,18 +143,13 @@ class LocationService {
     }
   }
 
-  // 디바이스 ID 가져오기 (간단한 구현)
+  /// 디바이스 ID 가져오기 (데모)
   Future<String> _getDeviceId() async {
     // 실제 구현에서는 고유한 디바이스 ID를 사용해야 합니다
     return 'device_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  // 디바이스 ID 가져오기 (public 메서드)
-  Future<String> getDeviceId() async {
-    return await _getDeviceId();
-  }
-
-  // 현재 위치 가져오기
+  /// 현재 위치 1회 조회
   Future<Position?> getCurrentLocation() async {
     try {
       if (!await _checkPermissions()) {
@@ -162,23 +165,22 @@ class LocationService {
     }
   }
 
-  // 추적 상태 확인
+  /// 추적 상태
   bool get isTracking => _isTracking;
 
-  // 위치 권한 상태 확인
+  /// 위치 권한 상태
   Future<bool> get hasLocationPermission async {
     return await _checkPermissions();
   }
 
-  // 위치 서비스 활성화 상태 확인
+  /// 위치 서비스 활성화 상태
   Future<bool> get isLocationServiceEnabled async {
     return await Geolocator.isLocationServiceEnabled();
   }
 
-  // 위치 스트림 가져오기 (현재 추적 중인 스트림)
+  /// 위치 스트림 (새 스트림 생성 예시)
   Stream<Position>? get getPositionStream {
     if (_locationSubscription != null) {
-      // 새로운 위치 스트림 생성
       return Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -189,7 +191,7 @@ class LocationService {
     return null;
   }
 
-  // Firestore에서 위치 추적 데이터를 실시간으로 가져오는 스트림
+  /// Firestore 위치 기록 스트림(최신순)
   Stream<QuerySnapshot> getLocationTracksStream() {
     return _firestore
         .collection('location_tracks')
@@ -197,7 +199,7 @@ class LocationService {
         .snapshots();
   }
 
-  // 특정 디바이스의 위치 추적 데이터를 실시간으로 가져오는 스트림
+  /// 특정 디바이스 기록 스트림
   Stream<QuerySnapshot> getDeviceLocationTracksStream(String deviceId) {
     return _firestore
         .collection('location_tracks')
@@ -206,7 +208,7 @@ class LocationService {
         .snapshots();
   }
 
-  // 위치 추적 데이터를 날짜별로 필터링하여 가져오는 스트림
+  /// 특정 날짜의 기록 스트림
   Stream<QuerySnapshot> getLocationTracksByDateStream(DateTime date) {
     DateTime startOfDay = DateTime(date.year, date.month, date.day);
     DateTime endOfDay = startOfDay.add(const Duration(days: 1));
@@ -219,7 +221,7 @@ class LocationService {
         .snapshots();
   }
 
-  // 위치 추적 데이터 추가
+  /// 위치 기록 수동 추가
   Future<void> addLocationTrack(Map<String, dynamic> locationData) async {
     try {
       await _firestore.collection('location_tracks').add({
@@ -234,7 +236,7 @@ class LocationService {
     }
   }
 
-  // 위치 추적 데이터 삭제
+  /// 위치 기록 삭제
   Future<void> deleteLocationTrack(String documentId) async {
     try {
       await _firestore.collection('location_tracks').doc(documentId).delete();
@@ -245,7 +247,7 @@ class LocationService {
     }
   }
 
-  // 위치 추적 데이터 업데이트
+  /// 위치 기록 업데이트
   Future<void> updateLocationTrack(
     String documentId,
     Map<String, dynamic> updateData,
@@ -262,7 +264,7 @@ class LocationService {
     }
   }
 
-  // 위치 추적 데이터 일괄 삭제 (특정 디바이스)
+  /// 특정 디바이스의 위치 기록 일괄 삭제
   Future<void> deleteDeviceLocationTracks(String deviceId) async {
     try {
       final querySnapshot = await _firestore
@@ -283,7 +285,7 @@ class LocationService {
     }
   }
 
-  // 위치 추적 데이터 일괄 삭제 (특정 날짜 범위)
+  /// 날짜 범위 위치 기록 일괄 삭제
   Future<void> deleteLocationTracksByDateRange(
     DateTime startDate,
     DateTime endDate,

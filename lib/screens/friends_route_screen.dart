@@ -221,22 +221,20 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                 ),
 
                 // 위치 핀들
-                ...route.routePoints
-                    .map(
-                      (point) => Positioned(
-                        left: _getRelativeX(point.longitude),
-                        top: _getRelativeY(point.latitude),
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+                ...route.routePoints.map(
+                  (point) => Positioned(
+                    left: _getRelativeX(point.longitude),
+                    top: _getRelativeY(point.latitude),
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
                       ),
-                    )
-                    .toList(),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -421,9 +419,9 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 제목
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -459,9 +457,9 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 동선 요약 정보
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -496,9 +494,9 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 지도 영역
               Expanded(
                 child: Container(
@@ -519,18 +517,20 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                           decoration: BoxDecoration(
                             color: Colors.blue.shade50,
                             image: const DecorationImage(
-                              image: NetworkImage('https://picsum.photos/400/300?random=map'),
+                              image: NetworkImage(
+                                'https://picsum.photos/400/300?random=map',
+                              ),
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
-                        
+
                         // 동선 경로
                         CustomPaint(
                           size: const Size(double.infinity, double.infinity),
                           painter: GPSRoutePainter(route.routePoints),
                         ),
-                        
+
                         // 위치 핀들
                         ...route.routePoints.asMap().entries.map((entry) {
                           final index = entry.key;
@@ -545,20 +545,32 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                                   width: 16,
                                   height: 16,
                                   decoration: BoxDecoration(
-                                    color: index == 0 ? Colors.green : Colors.red,
+                                    color: index == 0
+                                        ? Colors.green
+                                        : Colors.red,
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
                                   ),
                                   child: index == 0
-                                      ? const Icon(Icons.play_arrow, color: Colors.white, size: 10)
+                                      ? const Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.white,
+                                          size: 10,
+                                        )
                                       : null,
                                 ),
-                                
+
                                 // 장소명
                                 if (index < 3) // 처음 3개만 표시
                                   Container(
                                     margin: const EdgeInsets.only(top: 4),
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.7),
                                       borderRadius: BorderRadius.circular(8),
@@ -575,15 +587,15 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 동선 포인트 목록
               Container(
                 height: 120,
@@ -611,7 +623,9 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: index == 0 ? Colors.green : Colors.blue,
+                                  color: index == 0
+                                      ? Colors.green
+                                      : Colors.blue,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -651,7 +665,7 @@ class _FriendsRouteScreenState extends State<FriendsRouteScreen> {
                   },
                 ),
               ),
-              
+
               const SizedBox(height: 20),
             ],
           ),

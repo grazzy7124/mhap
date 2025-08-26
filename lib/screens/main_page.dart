@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'onboarding_screen.dart';
 import 'camera_screen.dart';
 import 'map_screen.dart';
+import 'shopping_screen.dart';
+import 'onboarding_screen.dart';
 
 /// 메인 페이지
-/// 
-/// 이 화면은 앱의 핵심 화면으로, 사용자가 로그인 후 보게 되는 메인 화면입니다.
-/// 주요 기능:
-/// - PageView를 사용한 탭 간 슬라이드 네비게이션
-/// - 하단 네비게이션 바를 통한 탭 전환
-/// - 프로필 메뉴 및 로그아웃 기능
-/// - 각 탭별 화면 관리 (사진, 카메라, 지도)
+///
+/// 앱의 핵심 탭(사진/카메라/지도/쇼핑 등)으로 이동하는 허브 역할을 합니다.
+/// - 하단 네비게이션 바로 탭 전환
+/// - PageView로 스와이프 전환(필요 시 비활성화 가능)
+/// - 프로필/로그아웃 등 상단 메뉴 제공(로그아웃 시 온보딩으로 복귀)
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -20,282 +18,65 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _currentIndex = 0; // 현재 선택된 탭 인덱스
-  final PageController _pageController = PageController(); // 페이지 컨트롤러
+  /// 현재 선택된 탭 인덱스
+  int _currentIndex = 1; // 기본 카메라 탭으로 시작 예시
 
-  // 각 탭에 해당하는 화면들
-  final List<Widget> _pages = [
-    const PhotosTab(), // 사진 탭
-    const CameraScreen(), // 카메라 탭
-    const MapScreen(), // 지도 탭
-  ];
+  /// 페이지 컨트롤러 (탭과 동기화)
+  final PageController _pageController = PageController(initialPage: 1);
 
   @override
   void dispose() {
-    // 페이지 컨트롤러 정리
     _pageController.dispose();
     super.dispose();
   }
 
-  /// 탭 변경 시 호출되는 메서드
-  /// 
-  /// 하단 네비게이션 바에서 탭을 선택했을 때 실행됩니다.
-  /// PageView를 해당 탭으로 이동시키고 현재 인덱스를 업데이트합니다.
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+  /// 하단 탭 선택 시 페이지 이동
+  void _onTabSelected(int index) {
+    setState(() => _currentIndex = index);
+    _pageController.jumpToPage(index);
+  }
+
+  /// 로그아웃 처리: 온보딩으로 전환
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      (_) => false,
     );
-  }
-
-  /// 페이지 변경 시 호출되는 메서드
-  /// 
-  /// PageView에서 슬라이드로 페이지를 변경했을 때 실행됩니다.
-  /// 현재 인덱스를 업데이트하여 하단 네비게이션 바와 동기화합니다.
-  void _onPageChanged(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
-  /// 프로필 메뉴를 표시하는 메서드
-  /// 
-  /// 앱바의 프로필 아이콘을 탭했을 때 실행됩니다.
-  /// 로그아웃, 프로필, 설정 등의 옵션을 제공합니다.
-  void _showProfileMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 드래그 핸들
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            // 프로필 메뉴 옵션들
-            _buildProfileMenuItem(
-              icon: Icons.person,
-              title: '프로필',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: 프로필 화면으로 이동
-              },
-            ),
-            _buildProfileMenuItem(
-              icon: Icons.settings,
-              title: '설정',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: 설정 화면으로 이동
-              },
-            ),
-            _buildProfileMenuItem(
-              icon: Icons.help,
-              title: '도움말',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: 도움말 화면으로 이동
-              },
-            ),
-            _buildProfileMenuItem(
-              icon: Icons.info,
-              title: '정보',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: 정보 화면으로 이동
-              },
-            ),
-            const Divider(),
-            _buildProfileMenuItem(
-              icon: Icons.logout,
-              title: '로그아웃',
-              onTap: () {
-                Navigator.pop(context);
-                _showLogoutDialog();
-              },
-              isDestructive: true,
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 프로필 메뉴 아이템을 생성하는 메서드
-  /// 
-  /// 각 메뉴 옵션의 UI를 생성합니다.
-  /// 아이콘, 제목, 탭 이벤트, 그리고 위험한 액션인지 여부를 설정할 수 있습니다.
-  Widget _buildProfileMenuItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? Colors.red : Colors.grey[700],
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isDestructive ? Colors.red : Colors.grey[800],
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      onTap: onTap,
-    );
-  }
-
-  /// 로그아웃 확인 다이얼로그를 표시하는 메서드
-  /// 
-  /// 사용자가 로그아웃을 선택했을 때 확인 다이얼로그를 표시합니다.
-  /// 확인 시 로그아웃 처리를 진행합니다.
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('로그아웃'),
-        content: const Text('정말 로그아웃 하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _logout();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('로그아웃'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 로그아웃 처리를 수행하는 메서드
-  /// 
-  /// SharedPreferences에서 온보딩 완료 상태를 제거하고
-  /// 온보딩 화면으로 이동합니다.
-  /// 이는 사용자가 다시 로그인할 수 있도록 합니다.
-  Future<void> _logout() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('onboarding_completed');
-      
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const OnboardingScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              // 왼쪽에서 오른쪽으로 슬라이드하는 애니메이션 (로그아웃 효과)
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(-1.0, 0.0), // 왼쪽에서 시작
-                  end: Offset.zero, // 중앙으로 이동
-                ).animate(animation),
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
-      }
-    } catch (e) {
-      print('로그아웃 오류: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('로그아웃 중 오류가 발생했습니다: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 앱바 (프로필 메뉴 포함)
       appBar: AppBar(
-        title: const Text(
-          'Whatapp',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.green,
-        elevation: 0,
+        title: const Text('Whatapp'),
         actions: [
-          // 프로필 메뉴 버튼
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.white),
-            onPressed: _showProfileMenu,
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'logout') _logout();
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'logout', child: Text('로그아웃')),
+            ],
           ),
         ],
       ),
-      
-      // 메인 콘텐츠 (PageView)
       body: PageView(
         controller: _pageController,
-        onPageChanged: _onPageChanged,
-        physics: const PageScrollPhysics(), // 페이지 스크롤 물리 효과
-        scrollDirection: Axis.horizontal, // 가로 방향 스크롤
-        children: _pages,
+        onPageChanged: (idx) => setState(() => _currentIndex = idx),
+        children: const [
+          ShoppingScreen(),
+          CameraScreen(),
+          MapScreen(),
+        ],
       ),
-      
-      // 하단 네비게이션 바
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        type: BottomNavigationBarType.fixed, // 3개 이상의 탭을 지원
-        backgroundColor: Colors.white,
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey[600],
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
+        onTap: _onTabSelected,
         items: const [
-          // 사진 탭
-          BottomNavigationBarItem(
-            icon: Icon(Icons.photo_library),
-            label: '사진',
-          ),
-          // 카메라 탭
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt),
-            label: '카메라',
-          ),
-          // 지도 탭
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: '지도',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: '쇼핑'),
+          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: '카메라'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: '지도'),
         ],
       ),
     );
@@ -303,7 +84,7 @@ class _MainPageState extends State<MainPage> {
 }
 
 /// 사진 탭
-/// 
+///
 /// 이 위젯은 메인 페이지의 첫 번째 탭으로, 사용자와 친구들이 찍은 사진들을 표시합니다.
 /// 주요 기능:
 /// - 내 사진과 친구들의 사진을 구분하여 표시
@@ -351,7 +132,7 @@ class _PhotosTabState extends State<PhotosTab> with SingleTickerProviderStateMix
             ],
           ),
         ),
-        
+
         // 탭 뷰
         Expanded(
           child: TabBarView(
@@ -369,7 +150,7 @@ class _PhotosTabState extends State<PhotosTab> with SingleTickerProviderStateMix
   }
 
   /// 내 사진 탭을 구성하는 메서드
-  /// 
+  ///
   /// 사용자가 직접 찍은 사진들을 그리드 형태로 표시합니다.
   /// 현재는 임시 데이터를 사용하며, 향후 Firebase에서 실제 데이터를 가져올 예정입니다.
   Widget _buildMyPhotosTab() {
@@ -426,13 +207,13 @@ class _PhotosTabState extends State<PhotosTab> with SingleTickerProviderStateMix
   }
 
   /// 친구 사진 탭을 구성하는 메서드
-  /// 
+  ///
   /// 친구들이 찍은 사진들을 표시합니다.
   /// 친구별로 구분하여 표시하며, 각 친구의 사진을 클릭할 수 있습니다.
   Widget _buildFriendPhotosTab() {
     // 임시 친구 데이터
     final friends = ['김철수', '이영희', '박민수', '정수진'];
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: friends.length,
@@ -444,7 +225,7 @@ class _PhotosTabState extends State<PhotosTab> with SingleTickerProviderStateMix
   }
 
   /// 친구별 사진 탭을 구성하는 메서드
-  /// 
+  ///
   /// 특정 친구의 사진들을 표시합니다.
   /// 친구 이름과 함께 사진들을 그리드 형태로 보여줍니다.
   Widget _buildFriendTab(String friendName) {
@@ -465,7 +246,7 @@ class _PhotosTabState extends State<PhotosTab> with SingleTickerProviderStateMix
               ),
             ),
           ),
-          
+
           // 친구의 사진들 (그리드)
           GridView.builder(
             shrinkWrap: true, // ListView 내부에서 사용할 때 필요

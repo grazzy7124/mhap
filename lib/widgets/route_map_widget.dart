@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/daily_route.dart';
 
+/// RouteMapWidget
+///
+/// 일일 동선(DailyRoute)을 간단한 카드 형태로 표시하는 위젯입니다.
+/// - 상단 헤더: 날짜/포인트 수
+/// - 본문: 지도 자리에 해당하는 플레이스홀더(실제 구현 시 Google Maps 등으로 교체)
+/// - 하단: 총 거리/총 시간/지점 수 요약
 class RouteMapWidget extends StatelessWidget {
   final DailyRoute route;
   final double height;
@@ -24,7 +30,7 @@ class RouteMapWidget extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 헤더
+          // 헤더(날짜/포인트 수)
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -96,7 +102,7 @@ class RouteMapWidget extends StatelessWidget {
             ),
           ),
 
-          // 동선 요약 정보
+          // 동선 요약 정보(총 거리/시간/지점 수)
           if (showDetails)
             Container(
               padding: const EdgeInsets.all(12),
@@ -109,7 +115,6 @@ class RouteMapWidget extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // 총 거리
                   Expanded(
                     child: _buildInfoItem(
                       icon: Icons.straighten,
@@ -117,11 +122,7 @@ class RouteMapWidget extends StatelessWidget {
                       value: '${route.totalDistance.toStringAsFixed(1)}m',
                     ),
                   ),
-
-                  // 구분선
                   Container(height: 40, width: 1, color: Colors.grey.shade300),
-
-                  // 총 시간
                   Expanded(
                     child: _buildInfoItem(
                       icon: Icons.access_time,
@@ -129,11 +130,7 @@ class RouteMapWidget extends StatelessWidget {
                       value: _formatDuration(route.totalDuration),
                     ),
                   ),
-
-                  // 구분선
                   Container(height: 40, width: 1, color: Colors.grey.shade300),
-
-                  // 지점 수
                   Expanded(
                     child: _buildInfoItem(
                       icon: Icons.location_on,
@@ -149,6 +146,7 @@ class RouteMapWidget extends StatelessWidget {
     );
   }
 
+  /// 요약 정보 타일 생성
   Widget _buildInfoItem({
     required IconData icon,
     required String label,
@@ -158,10 +156,7 @@ class RouteMapWidget extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: Colors.blue.shade600),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-        ),
+        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
         const SizedBox(height: 2),
         Text(
           value,
@@ -175,14 +170,10 @@ class RouteMapWidget extends StatelessWidget {
     );
   }
 
+  /// Duration → 한글 문자열 변환
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes % 60;
-
-    if (hours > 0) {
-      return '$hours시간 $minutes분';
-    } else {
-      return '${minutes}분';
-    }
+    return hours > 0 ? '$hours시간 $minutes분' : '$minutes분';
   }
 }
