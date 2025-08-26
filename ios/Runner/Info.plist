@@ -49,7 +49,7 @@
 	
 	<!-- Google Maps API 키 -->
 	<key>GMSApiKey</key>
-	<string>YOUR_ACTUAL_GOOGLE_MAPS_API_KEY</string>
+	<string>AIzaSyCGgn6uldBF3G9iBsAoRgYFrP4w4Ptd7uU</string>
 	
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
