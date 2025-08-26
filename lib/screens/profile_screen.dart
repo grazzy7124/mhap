@@ -534,9 +534,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 제목
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -572,9 +572,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 동선 요약 정보
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -609,9 +609,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 지도 영역
               Expanded(
                 child: Container(
@@ -632,18 +632,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           decoration: BoxDecoration(
                             color: Colors.blue.shade50,
                             image: const DecorationImage(
-                              image: NetworkImage('https://picsum.photos/400/300?random=map'),
+                              image: NetworkImage(
+                                'https://picsum.photos/400/300?random=map',
+                              ),
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
-                        
+
                         // 동선 경로
                         CustomPaint(
                           size: const Size(double.infinity, double.infinity),
                           painter: GPSRoutePainter(route.routePoints),
                         ),
-                        
+
                         // 위치 핀들
                         ...route.routePoints.asMap().entries.map((entry) {
                           final index = entry.key;
@@ -658,20 +660,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   width: 16,
                                   height: 16,
                                   decoration: BoxDecoration(
-                                    color: index == 0 ? Colors.green : Colors.red,
+                                    color: index == 0
+                                        ? Colors.green
+                                        : Colors.red,
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
                                   ),
                                   child: index == 0
-                                      ? const Icon(Icons.play_arrow, color: Colors.white, size: 10)
+                                      ? const Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.white,
+                                          size: 10,
+                                        )
                                       : null,
                                 ),
-                                
+
                                 // 장소명
                                 if (index < 3) // 처음 3개만 표시
                                   Container(
                                     margin: const EdgeInsets.only(top: 4),
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.7),
                                       borderRadius: BorderRadius.circular(8),
@@ -688,15 +702,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 동선 포인트 목록
               Container(
                 height: 120,
@@ -724,7 +738,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: index == 0 ? Colors.green : Colors.blue,
+                                  color: index == 0
+                                      ? Colors.green
+                                      : Colors.blue,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -764,7 +780,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
               ),
-              
+
               const SizedBox(height: 20),
             ],
           ),
@@ -779,8 +795,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const double minLon = 126.5;
     const double maxLon = 127.2;
     const double padding = 0.1;
-    
-    final normalizedLon = (longitude - (minLon - padding)) / ((maxLon + padding) - (minLon - padding));
+
+    final normalizedLon =
+        (longitude - (minLon - padding)) /
+        ((maxLon + padding) - (minLon - padding));
     return normalizedLon.clamp(0.0, 1.0) * 300;
   }
 
@@ -789,8 +807,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const double minLat = 37.4;
     const double maxLat = 37.7;
     const double padding = 0.05;
-    
-    final normalizedLat = (latitude - (minLat - padding)) / ((maxLat + padding) - (minLat - padding));
+
+    final normalizedLat =
+        (latitude - (minLat - padding)) /
+        ((maxLat + padding) - (minLat - padding));
     return (1.0 - normalizedLat.clamp(0.0, 1.0)) * 120;
   }
 }
@@ -814,16 +834,25 @@ class GPSRoutePainter extends CustomPainter {
 
     for (int i = 0; i < routePoints.length; i++) {
       final point = routePoints[i];
-      
+
       // 서울 지역 좌표 범위에 맞게 정규화
       const double minLon = 126.5;
       const double maxLon = 127.2;
       const double minLat = 37.4;
       const double maxLat = 37.7;
       const double padding = 0.1;
-      
-      final x = ((point.longitude - (minLon - padding)) / ((maxLon + padding) - (minLon - padding))).clamp(0.0, 1.0) * size.width;
-      final y = (1.0 - ((point.latitude - (minLat - padding)) / ((maxLat + padding) - (minLat - padding))).clamp(0.0, 1.0)) * size.height;
+
+      final x =
+          ((point.longitude - (minLon - padding)) /
+                  ((maxLon + padding) - (minLon - padding)))
+              .clamp(0.0, 1.0) *
+          size.width;
+      final y =
+          (1.0 -
+              ((point.latitude - (minLat - padding)) /
+                      ((maxLat + padding) - (minLat - padding)))
+                  .clamp(0.0, 1.0)) *
+          size.height;
 
       if (i == 0) {
         path.moveTo(x, y);
@@ -856,5 +885,3 @@ class VisitedPlace {
     required this.longitude,
   });
 }
-
-
