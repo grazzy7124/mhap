@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -12,348 +12,302 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
-  bool _isCameraMode = true;
+  bool _isLoading = false;
+
+  Future<void> _takePhoto() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+
+      if (photo != null) {
+        setState(() {
+          _selectedImage = File(photo.path);
+        });
+        _showLocationInputDialog();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카메라 오류: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+        _showLocationInputDialog();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('갤러리 오류: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showLocationInputDialog() {
+    final locationController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('장소 입력'),
+        content: TextField(
+          controller: locationController,
+          decoration: const InputDecoration(
+            labelText: '장소명',
+            hintText: '예: 스타벅스 강남점',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (locationController.text.isNotEmpty) {
+                Navigator.pop(context);
+                _savePhotoWithLocation(locationController.text);
+              }
+            },
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _savePhotoWithLocation(String location) {
+    // TODO: Firebase에 사진과 위치 정보 저장
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$location에 사진이 저장되었습니다!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    
+    // 사진 초기화
+    setState(() {
+      _selectedImage = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 상단 앱바
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 30,
+      // 카메라 화면에서 뒤로가기 제스처 방지
+      body: WillPopScope(
+        onWillPop: () async {
+          // 뒤로가기 버튼이나 제스처 시 확인 다이얼로그 표시
+          return await _showExitDialog();
+        },
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 상단 앱바
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () {
+                        // 이전 화면으로 돌아가기
+                        Navigator.of(context).pop();
+                      },
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  Text(
-                    '새 피드',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    const Text(
+                      '사진 촬영',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.flip_camera_ios,
-                      color: Colors.white,
-                      size: 30,
+                    IconButton(
+                      icon: const Icon(Icons.flash_on, color: Colors.white),
+                      onPressed: () {
+                        // TODO: 플래시 토글
+                      },
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isCameraMode = !_isCameraMode;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // 카메라 프리뷰 영역 (4:4 비율)
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade900,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 2,
-                  ),
+                  ],
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
+              ),
+              
+              // 메인 카메라 영역
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.grey[900],
+                  ),
                   child: _selectedImage != null
-                      ? Image.file(
-                          _selectedImage!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.file(
+                            _selectedImage!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
                         )
-                      : _buildCameraPreview(),
+                      : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.camera_alt,
+                                size: 80,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '사진을 촬영하거나\n갤러리에서 선택하세요',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
                 ),
               ),
-            ),
-
-            // 하단 컨트롤 버튼들
-            Container(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // 갤러리 버튼 (좌측 하단)
-                  _buildControlButton(
-                    icon: Icons.photo_library,
-                    onPressed: _pickImageFromGallery,
-                    color: Colors.blue,
+              
+              // 하단 컨트롤 버튼들
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // 갤러리 버튼
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.photo_library,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                        onPressed: _isLoading ? null : _pickFromGallery,
+                      ),
+                    ),
+                    
+                    // 촬영 버튼
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(40),
+                        border: Border.all(color: Colors.grey[400]!, width: 4),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.camera,
+                          color: Colors.black,
+                          size: 40,
+                        ),
+                        onPressed: _isLoading ? null : _takePhoto,
+                      ),
+                    ),
+                    
+                    // 설정 버튼
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.settings,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                        onPressed: () {
+                          // TODO: 카메라 설정
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // 로딩 인디케이터
+              if (_isLoading)
+                Container(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
-
-                  // 촬영 버튼 (가운데 하단)
-                  _buildShutterButton(),
-
-                  // 카메라 전환 버튼 (우측 하단)
-                  _buildControlButton(
-                    icon: Icons.switch_camera,
-                    onPressed: () {
-                      setState(() {
-                        _isCameraMode = !_isCameraMode;
-                      });
-                    },
-                    color: Colors.white,
-                  ),
-                ],
-              ),
-            ),
-          ],
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCameraPreview() {
-    return Container(
-      color: Colors.grey.shade800,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _isCameraMode ? Icons.camera_alt : Icons.camera_front,
-              size: 80,
-              color: Colors.white.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _isCameraMode ? '후면 카메라' : '전면 카메라',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '4:4 비율로 촬영됩니다',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildControlButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    Color? color,
-  }) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: color ?? Colors.white),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
-  Widget _buildShutterButton() {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 4,
-        ),
-      ),
-      child: IconButton(
-        icon: const Icon(
-          Icons.camera,
-          size: 40,
-          color: Colors.black,
-        ),
-        onPressed: _takePicture,
-      ),
-    );
-  }
-
-  Future<void> _pickImageFromGallery() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('갤러리에서 이미지를 가져오는데 실패했습니다.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _takePicture() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-        preferredCameraDevice: _isCameraMode
-            ? CameraDevice.rear
-            : CameraDevice.front,
-      );
-
-      if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('사진 촬영에 실패했습니다.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _showPostOptions() {
-    if (_selectedImage == null) return;
-
-    showModalBottomSheet(
+  // 앱 종료 확인 다이얼로그
+  Future<bool> _showExitDialog() async {
+    return await showDialog<bool>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) => AlertDialog(
+        title: const Text('앱 종료'),
+        content: const Text('정말로 앱을 종료하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
-            const SizedBox(height: 20),
-            
-            // 선택된 이미지 미리보기
-            Container(
-              width: 100,
-              height: 100,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(
-                  image: FileImage(_selectedImage!),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-
-            // 피드 작성 버튼
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: ElevatedButton(
-                onPressed: () {
-                  // 피드 작성 페이지로 이동
-                  Navigator.pop(context);
-                  _navigateToPostCreation();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  '피드 작성하기',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-            // 다시 촬영 버튼
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: OutlinedButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedImage = null;
-                  });
-                  Navigator.pop(context);
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  '다시 촬영',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-          ],
-        ),
+            child: const Text('종료'),
+          ),
+        ],
       ),
-    );
-  }
-
-  void _navigateToPostCreation() {
-    // TODO: 피드 작성 페이지로 이동
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('피드 작성 기능은 추후 구현 예정입니다.'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    ) ?? false;
   }
 }

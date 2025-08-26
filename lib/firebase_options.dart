@@ -27,7 +27,10 @@ class DefaultFirebaseOptions {
       case TargetPlatform.macOS:
         return macos;
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -41,49 +44,40 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyD8zAmja_Dd1xhYIzliCfHTTKfebJMhEOU',
-    appId: '1:1038389858842:web:e96637fb912ec1a9b977a3',
-    messagingSenderId: '1038389858842',
-    projectId: 'whatapp-4a56b',
-    authDomain: 'whatapp-4a56b.firebaseapp.com',
-    storageBucket: 'whatapp-4a56b.firebasestorage.app',
-    measurementId: 'G-Y5BBTX2JDR',
+    apiKey: 'your-web-api-key',
+    appId: 'your-web-app-id',
+    messagingSenderId: 'your-sender-id',
+    projectId: 'your-project-id',
+    authDomain: 'your-project-id.firebaseapp.com',
+    storageBucket: 'your-project-id.appspot.com',
+    measurementId: 'your-measurement-id',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC9P9jOPK-JwkueDELVDqK8SUP_I8TpmpY',
-    appId: '1:1038389858842:android:8ae40aa3ca446e93b977a3',
-    messagingSenderId: '1038389858842',
-    projectId: 'whatapp-4a56b',
-    storageBucket: 'whatapp-4a56b.firebasestorage.app',
+    apiKey: 'your-android-api-key',
+    appId: 'your-android-app-id',
+    messagingSenderId: 'your-sender-id',
+    projectId: 'your-project-id',
+    storageBucket: 'your-project-id.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDCfTElvzLr05zo5N7O1vJilqrZTkzuVWc',
-    appId: '1:1038389858842:ios:a59ba7133ceac394b977a3',
-    messagingSenderId: '1038389858842',
-    projectId: 'whatapp-4a56b',
-    storageBucket: 'whatapp-4a56b.firebasestorage.app',
+    apiKey: 'your-ios-api-key',
+    appId: 'your-ios-app-id',
+    messagingSenderId: 'your-sender-id',
+    projectId: 'your-project-id',
+    storageBucket: 'your-project-id.appspot.com',
+    iosClientId: 'your-ios-client-id',
     iosBundleId: 'com.example.whatapp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDCfTElvzLr05zo5N7O1vJilqrZTkzuVWc',
-    appId: '1:1038389858842:ios:9e0c348228b67261b977a3',
-    messagingSenderId: '1038389858842',
-    projectId: 'whatapp-4a56b',
-    storageBucket: 'whatapp-4a56b.firebasestorage.app',
-    iosBundleId: 'com.example.mhap',
+    apiKey: 'your-macos-api-key',
+    appId: 'your-macos-app-id',
+    messagingSenderId: 'your-sender-id',
+    projectId: 'your-project-id',
+    storageBucket: 'your-project-id.appspot.com',
+    iosClientId: 'your-macos-client-id',
+    iosBundleId: 'com.example.whatapp',
   );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyD8zAmja_Dd1xhYIzliCfHTTKfebJMhEOU',
-    appId: '1:1038389858842:web:00a542eb635db132b977a3',
-    messagingSenderId: '1038389858842',
-    projectId: 'whatapp-4a56b',
-    authDomain: 'whatapp-4a56b.firebaseapp.com',
-    storageBucket: 'whatapp-4a56b.firebasestorage.app',
-    measurementId: 'G-8C4W6VF1FL',
-  );
-
 }
