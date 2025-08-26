@@ -1,8 +1,7 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:stream_transform/stream_transform.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -174,6 +173,20 @@ class LocationService {
   // 위치 서비스 활성화 상태 확인
   Future<bool> get isLocationServiceEnabled async {
     return await Geolocator.isLocationServiceEnabled();
+  }
+
+  // 위치 스트림 가져오기 (현재 추적 중인 스트림)
+  Stream<Position>? get getPositionStream {
+    if (_locationSubscription != null) {
+      // 새로운 위치 스트림 생성
+      return Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      );
+    }
+    return null;
   }
 
   // Firestore에서 위치 추적 데이터를 실시간으로 가져오는 스트림
