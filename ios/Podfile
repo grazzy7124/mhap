@@ -31,6 +31,11 @@ target 'Runner' do
   use_frameworks!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  
+  # Google Maps 관련 추가 설정
+  pod 'GoogleMaps', '~> 8.4.0'
+  pod 'Google-Maps-iOS-Utils', '~> 5.0.0'
+  
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -39,5 +44,22 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    
+    # iOS 전용 빌드 설정
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      
+      # Google Maps 관련 설정
+      if target.name == 'GoogleMaps'
+        config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+      end
+      
+      # 권한 관련 설정
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'PERMISSION_CAMERA=1'
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'PERMISSION_PHOTOS=1'
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'PERMISSION_LOCATION=1'
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'PERMISSION_MICROPHONE=1'
+    end
   end
 end
