@@ -86,42 +86,58 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: '이메일',
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return '이메일을 입력하세요';
-                        if (!value.contains('@')) return '올바른 이메일을 입력하세요';
-                        return null;
+                    GestureDetector(
+                      onTap: () {
+                        
                       },
+                      child: Container(
+                        width: 278, height: 40,
+                        decoration: BoxDecoration(
+                          color: Color(0xffF0F0F0),
+                          borderRadius: BorderRadius.circular(18)
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(width: 8,),
+                            Image.asset(
+                              'assets/images/google.png',
+                              width: 27,
+                            ),
+                            SizedBox(width: 46,),
+                            Text('구글 계정으로 로그인')
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: '비밀번호',
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.length < 6) return '6자 이상 입력하세요';
-                        return null;
+                    GestureDetector(
+                      onTap: () {
+                        
                       },
+                      child: Container(
+                        width: 278, height: 40,
+                        decoration: BoxDecoration(
+                          color: Color(0xffF0F0F0),
+                          borderRadius: BorderRadius.circular(18)
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(width: 8,),
+                            Image.asset(
+                              'assets/images/apple.png',
+                              width: 23, height: 29,
+                            ),
+                            SizedBox(width: 46,),
+                            Text('애플 계정으로 로그인')
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 24),
-
-              // 제출 버튼
-              ElevatedButton(
-                onPressed: _submit,
-                child: Text(_isLoginMode ? '로그인' : '회원가입'),
-              ),
 
               const SizedBox(height: 8),
 
