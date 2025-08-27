@@ -44,88 +44,223 @@ class _MapScreenState extends State<MapScreen> {
   String _selectedFriend = 'all'; // 'all'은 전체
   final List<String> _friends = ['all', '기노은', '권하민', '정태주', '박예은', '이찬민'];
 
-  // 지도 마커 더미 데이터 (포항 지역)
+  // 지도 마커 더미 데이터 (포항 지역) - 실제 사진처럼 보이는 이미지들
   final List<MapLocation> _locations = [
     MapLocation(
       id: '1',
       name: '카츠닉',
       latitude: 36.073091,
       longitude: 129.404963,
-      friendName: '기노은',
-      photoUrl: 'https://via.placeholder.com/150/FF6B6B/FFFFFF?text=카츠닉',
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+      reviews: [
+        Review(
+          id: '1-1',
+          friendName: '기노은',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+          comment: '돈카츠가 정말 맛있어요! 🍖',
+        ),
+        Review(
+          id: '1-2',
+          friendName: '권하민',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(hours: 3)),
+          comment: '가격 대비 퀄리티 좋아요 👍',
+        ),
+      ],
     ),
     MapLocation(
       id: '2',
       name: '고바우 식당',
       latitude: 36.040135,
       longitude: 129.364282,
-      friendName: '권하민',
-      photoUrl: 'https://via.placeholder.com/150/4ECDC4/FFFFFF?text=고바우',
-      timestamp: DateTime.now().subtract(const Duration(hours: 4)),
+      reviews: [
+        Review(
+          id: '2-1',
+          friendName: '권하민',
+          photoUrl:
+              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(hours: 4)),
+          comment: '한식의 정석! 🥘',
+        ),
+        Review(
+          id: '2-2',
+          friendName: '정태주',
+          photoUrl:
+              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(hours: 5)),
+          comment: '반찬이 정말 맛있어요 😋',
+        ),
+      ],
     ),
     MapLocation(
       id: '3',
       name: '컴포터블 피자',
       latitude: 36.088487,
       longitude: 129.390091,
-      friendName: '정태주',
-      photoUrl: 'https://via.placeholder.com/150/45B7D1/FFFFFF?text=컴포터블',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
+      reviews: [
+        Review(
+          id: '3-1',
+          friendName: '정태주',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(days: 1)),
+          comment: '피자 크러스트가 완벽해요 🍕',
+        ),
+        Review(
+          id: '3-2',
+          friendName: '박예은',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(days: 1)),
+          comment: '치즈가 정말 풍부해요 🧀',
+        ),
+      ],
     ),
     MapLocation(
       id: '4',
       name: '베라보 제면소',
       latitude: 36.081489,
       longitude: 129.399139,
-      friendName: '박예은',
-      photoUrl: 'https://via.placeholder.com/150/96CEB4/FFFFFF?text=베라보',
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
+      reviews: [
+        Review(
+          id: '4-1',
+          friendName: '박예은',
+          photoUrl:
+              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(days: 2)),
+          comment: '면발이 쫄깃쫄깃해요 🍜',
+        ),
+        Review(
+          id: '4-2',
+          friendName: '이찬민',
+          photoUrl:
+              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(days: 2)),
+          comment: '육수가 정말 깊어요 🥣',
+        ),
+      ],
     ),
     MapLocation(
       id: '5',
       name: '라멘 구루마',
       latitude: 36.088689,
       longitude: 129.390044,
-      friendName: '이찬민',
-      photoUrl: 'https://via.placeholder.com/150/FFEAA7/FFFFFF?text=구루마',
-      timestamp: DateTime.now().subtract(const Duration(days: 3)),
+      reviews: [
+        Review(
+          id: '5-1',
+          friendName: '이찬민',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(days: 3)),
+          comment: '일본 라멘의 맛을 느낄 수 있어요 🇯🇵',
+        ),
+        Review(
+          id: '5-2',
+          friendName: '기노은',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(days: 3)),
+          comment: '차슈가 부드러워요 🥩',
+        ),
+      ],
     ),
     MapLocation(
       id: '6',
       name: '인브리즈',
       latitude: 36.081709,
       longitude: 129.395523,
-      friendName: '기노은',
-      photoUrl: 'https://via.placeholder.com/150/FF9FF3/FFFFFF?text=인브리즈',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
+      reviews: [
+        Review(
+          id: '6-1',
+          friendName: '기노은',
+          photoUrl:
+              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(days: 1)),
+          comment: '분위기가 정말 좋아요 ✨',
+        ),
+        Review(
+          id: '6-2',
+          friendName: '권하민',
+          photoUrl:
+              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(days: 1)),
+          comment: '커피가 정말 맛있어요 ☕',
+        ),
+      ],
     ),
     MapLocation(
       id: '7',
       name: '쿠킹빌리지',
       latitude: 36.082127,
       longitude: 129.395925,
-      friendName: '권하민',
-      photoUrl: 'https://via.placeholder.com/150/FECA57/FFFFFF?text=쿠킹',
-      timestamp: DateTime.now().subtract(const Duration(hours: 6)),
+      reviews: [
+        Review(
+          id: '7-1',
+          friendName: '권하민',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(hours: 6)),
+          comment: '한식 뷔페의 정석! 🍽️',
+        ),
+        Review(
+          id: '7-2',
+          friendName: '정태주',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(hours: 6)),
+          comment: '반찬 종류가 정말 많아요 🥗',
+        ),
+      ],
     ),
     MapLocation(
       id: '8',
       name: '스프커리보울',
       latitude: 36.081461,
       longitude: 129.398412,
-      friendName: '정태주',
-      photoUrl: 'https://via.placeholder.com/150/54A0FF/FFFFFF?text=스프커리',
-      timestamp: DateTime.now().subtract(const Duration(hours: 8)),
+      reviews: [
+        Review(
+          id: '8-1',
+          friendName: '정태주',
+          photoUrl:
+              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(hours: 8)),
+          comment: '커리가 정말 맛있어요 🍛',
+        ),
+        Review(
+          id: '8-2',
+          friendName: '박예은',
+          photoUrl:
+              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(hours: 8)),
+          comment: '양이 정말 많아요! 🥄',
+        ),
+      ],
     ),
     MapLocation(
       id: '9',
       name: '뜨돈',
       latitude: 36.086331,
       longitude: 129.403869,
-      friendName: '박예은',
-      photoUrl: 'https://via.placeholder.com/150/5F27CD/FFFFFF?text=뜨돈',
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
+      reviews: [
+        Review(
+          id: '9-1',
+          friendName: '박예은',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+          timestamp: DateTime.now().subtract(const Duration(days: 2)),
+          comment: '돼지고기가 정말 맛있어요 🐷',
+        ),
+        Review(
+          id: '9-2',
+          friendName: '정태주',
+          photoUrl:
+              'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&crop=faces',
+          timestamp: DateTime.now().subtract(const Duration(days: 2)),
+          comment: '삼겹살이 완벽해요 🔥',
+        ),
+      ],
     ),
   ];
 
@@ -343,7 +478,9 @@ class _MapScreenState extends State<MapScreen> {
   /// 친구 필터 적용된 위치 목록 반환
   List<MapLocation> _getFilteredLocations() {
     if (_selectedFriend == 'all') return _locations;
-    return _locations.where((l) => l.friendName == _selectedFriend).toList();
+    return _locations
+        .where((l) => l.reviews.any((r) => r.friendName == _selectedFriend))
+        .toList();
   }
 
   /// 플랫폼별 지도 구성(현재는 Google Maps 고정)
@@ -387,14 +524,14 @@ class _MapScreenState extends State<MapScreen> {
         infoWindow: InfoWindow(
           title: location.name,
           snippet:
-              '${location.friendName} • ${_formatTimestamp(location.timestamp)}',
+              '${location.reviews.length}개 리뷰 • ${location.firstFriendName} • ${_formatTimestamp(location.latestTimestamp)}',
         ),
         onTap: () => _showLocationDetails(location),
         // 커스텀 마커가 있으면 사용, 없으면 기본 마커
         icon:
-            _customMarkers[location.friendName] ??
+            _customMarkers[location.firstFriendName] ??
             BitmapDescriptor.defaultMarkerWithHue(
-              _getMarkerColor(location.friendName),
+              _getMarkerColor(location.firstFriendName),
             ),
         // 마커 설정
         flat: false,
@@ -514,156 +651,232 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// 상세 정보 바텀시트 표시
+  /// 상세 정보 바텀시트 표시 (인스타그램 스타일 피드)
   void _showLocationDetails(MapLocation location) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      isScrollControlled: true, // 스크롤 가능하도록 설정
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7, // 초기 높이를 화면의 70%로 설정
+        minChildSize: 0.5, // 최소 높이를 화면의 50%로 설정
+        maxChildSize: 0.95, // 최대 높이를 화면의 95%로 설정
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // 드래그 핸들
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 장소 이름 헤더
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  location.name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 리뷰 개수 표시
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.photo_library,
+                      color: Colors.grey[600],
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${location.reviews.length}개의 리뷰',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 인스타그램 스타일 리뷰 피드
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: location.reviews.length,
+                  itemBuilder: (context, index) {
+                    final review = location.reviews[index];
+                    return _buildReviewCard(review, index == 0);
+                  },
+                ),
+              ),
+
+              // 하단 버튼들
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _openDirections(location),
+                        icon: const Icon(Icons.directions),
+                        label: const Text('길찾기'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _shareLocation(location),
+                        icon: const Icon(Icons.share),
+                        label: const Text('공유'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  /// 개별 리뷰 카드 위젯 (인스타그램 스타일)
+  Widget _buildReviewCard(Review review, bool isFirst) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 리뷰 헤더 (유저 정보 + 시간)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // 유저 아바타
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: _hueToColor(_getMarkerColor(review.friendName)),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Text(
+                      review.friendName[0],
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // 유저 이름
+                Expanded(
+                  child: Text(
+                    review.friendName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+
+                // 시간
+                Text(
+                  _formatTimestamp(review.timestamp),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+
+          // 사진
+          Container(
+            width: double.infinity,
+            height: 250,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(0),
+                bottom: Radius.circular(12),
+              ),
+              child: Image.network(
+                review.photoUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey[200],
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.error, color: Colors.red, size: 50),
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 20),
+          ),
+
+          // 리뷰 코멘트 (있는 경우에만)
+          if (review.comment != null && review.comment!.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(16),
               child: Text(
-                location.name,
+                review.comment!,
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              width: double.infinity,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  location.photoUrl,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Center(child: CircularProgressIndicator()),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Icon(
-                        Icons.error,
-                        color: Colors.red,
-                        size: 50,
-                      ),
-                    );
-                  },
+                  fontSize: 14,
+                  color: Colors.black87,
+                  height: 1.4,
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Center(
-                          child: Text(
-                            location.friendName[0],
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        location.friendName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    _formatTimestamp(location.timestamp),
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _openDirections(location),
-                      icon: const Icon(Icons.directions),
-                      label: const Text('길찾기'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _shareLocation(location),
-                      icon: const Icon(Icons.share),
-                      label: const Text('공유'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -902,18 +1115,43 @@ class MapLocation {
   final String name;
   final double latitude;
   final double longitude;
-  final String friendName;
-  final String photoUrl;
-  final DateTime timestamp;
+  final List<Review> reviews; // 여러 리뷰를 저장할 리스트
 
   MapLocation({
     required this.id,
     required this.name,
     required this.latitude,
     required this.longitude,
+    required this.reviews,
+  });
+
+  // 첫 번째 리뷰의 친구 이름 (마커 색상용)
+  String get firstFriendName =>
+      reviews.isNotEmpty ? reviews.first.friendName : 'Unknown';
+
+  // 첫 번째 리뷰의 사진 URL (마커 썸네일용)
+  String get firstPhotoUrl => reviews.isNotEmpty ? reviews.first.photoUrl : '';
+
+  // 가장 최근 리뷰 시간
+  DateTime get latestTimestamp => reviews.isNotEmpty
+      ? reviews.map((r) => r.timestamp).reduce((a, b) => a.isAfter(b) ? a : b)
+      : DateTime.now();
+}
+
+/// 리뷰 정보를 담는 데이터 클래스
+class Review {
+  final String id;
+  final String friendName;
+  final String photoUrl;
+  final DateTime timestamp;
+  final String? comment; // 리뷰 코멘트 (선택사항)
+
+  Review({
+    required this.id,
     required this.friendName,
     required this.photoUrl,
     required this.timestamp,
+    this.comment,
   });
 }
 
