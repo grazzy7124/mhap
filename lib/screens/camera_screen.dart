@@ -304,12 +304,12 @@ class _CameraScreenState extends State<CameraScreen> {
       await Future.delayed(const Duration(seconds: 2)); // 임시 딜레이
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('사진이 성공적으로 업로드되었습니다!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(
+        //     content: Text('사진이 성공적으로 업로드되었습니다!'),
+        //     backgroundColor: Colors.green,
+        //   ),
+        // );
 
         // 선택된 이미지 초기화
         setState(() {

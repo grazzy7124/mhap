@@ -23,6 +23,9 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // 별점 선택 상태
+  int _selectedRating = 0;
+
   @override
   void dispose() {
     _placeNameController.dispose();
@@ -34,7 +37,10 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
   Future<void> _saveReview() async {
     if (_placeNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('장소 이름을 입력해주세요.'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('장소 이름을 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -49,13 +55,16 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
         throw Exception('사용자가 로그인되지 않았습니다.');
       }
 
-      final String? imagePath = widget.initialImagePath ??
+      final String? imagePath =
+          widget.initialImagePath ??
           (ModalRoute.of(context)?.settings.arguments is Map
-              ? (ModalRoute.of(context)!.settings.arguments as Map)['imagePath'] as String?
+              ? (ModalRoute.of(context)!.settings.arguments as Map)['imagePath']
+                    as String?
               : null);
 
       final String? address = ModalRoute.of(context)?.settings.arguments is Map
-          ? (ModalRoute.of(context)!.settings.arguments as Map)['address'] as String?
+          ? (ModalRoute.of(context)!.settings.arguments as Map)['address']
+                as String?
           : null;
 
       if (imagePath == null) {
@@ -66,7 +75,8 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
       String imageUrl = '';
       if (imagePath.startsWith('file://') || imagePath.startsWith('/')) {
         final File imageFile = File(imagePath);
-        final String fileName = 'reviews/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final String fileName =
+            'reviews/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg';
         final Reference storageRef = _storage.ref().child(fileName);
         final UploadTask uploadTask = storageRef.putFile(imageFile);
         final TaskSnapshot snapshot = await uploadTask;
@@ -100,13 +110,17 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
         'longitude': longitude,
         'reviewText': _reviewController.text.trim(),
         'imageUrl': imageUrl,
+        'rating': _selectedRating, // 별점 추가
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('리뷰가 성공적으로 저장되었습니다!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('리뷰가 성공적으로 저장되었습니다!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.of(context).pop();
       }
@@ -114,7 +128,10 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
       print('리뷰 저장 오류: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('리뷰 저장 중 오류가 발생했습니다: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('리뷰 저장 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -128,17 +145,37 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String? imagePath = widget.initialImagePath ??
+    final String? imagePath =
+        widget.initialImagePath ??
         (ModalRoute.of(context)?.settings.arguments is Map
-            ? (ModalRoute.of(context)!.settings.arguments as Map)['imagePath'] as String?
+            ? (ModalRoute.of(context)!.settings.arguments as Map)['imagePath']
+                  as String?
             : null);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('리뷰 작성'),
+        backgroundColor: Colors.white,
+        leading: Row(
+          children: [
+            SizedBox(width: 22.05),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              child: Image.asset('assets/images/Vector.png', width: 18.89)
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: _isSaving ? null : _saveReview,
+            child: Text('확인', style: TextStyle(color: Color(0xff007AFF))),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(top: 16, bottom: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -157,75 +194,98 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // 2) 주소 표시 (카메라에서 전달받은 주소)
-            const Text('주소', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
+            Padding(
+              padding: EdgeInsets.only(left: 16, right: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.location_on, color: Colors.blue, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      imagePath != null && imagePath.isNotEmpty
-                          ? (ModalRoute.of(context)?.settings.arguments is Map
-                              ? (ModalRoute.of(context)!.settings.arguments as Map)['address'] as String? ?? '위치 정보 없음'
-                              : '위치 정보 없음')
-                          : '위치 정보 없음',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
+                  // 2) 주소 표시 (카메라에서 전달받은 주소)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.blue,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            imagePath != null && imagePath.isNotEmpty
+                                ? (ModalRoute.of(context)?.settings.arguments
+                                          is Map
+                                      ? (ModalRoute.of(
+                                                      context,
+                                                    )!.settings.arguments
+                                                    as Map)['address']
+                                                as String? ??
+                                            '위치 정보 없음'
+                                      : '위치 정보 없음')
+                                : '위치 정보 없음',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 3) 장소 이름 입력
+                  TextField(
+                    controller: _placeNameController,
+                    decoration: InputDecoration(
+                      hintText: '나만의 장소 이름을 입력하세요!',
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
                       ),
                     ),
                   ),
+                  // 4) 별점 선택
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: List.generate(5, (index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedRating = index + 1;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 0),
+                            child: Icon(
+                              Icons.star_rounded,
+                              size: 26,
+                              color: index < _selectedRating ? Colors.black : const Color(0xFFF2F2F7),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  // 5) 리뷰 내용 입력
+                  TextField(
+                    controller: _reviewController,
+                    maxLines: 8,
+                    decoration: InputDecoration(
+                      hintText: '내용 입력',
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // 3) 장소 이름 입력
-            const Text('장소 이름', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _placeNameController,
-              decoration: InputDecoration(
-                hintText: '장소 이름을 입력하세요',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                filled: true,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 4) 리뷰 내용 입력
-            const Text('리뷰 내용', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _reviewController,
-              maxLines: 6,
-              decoration: InputDecoration(
-                hintText: '리뷰 내용을 입력하세요',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                filled: true,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            ElevatedButton(
-              onPressed: _isSaving ? null : _saveReview,
-              child: _isSaving 
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('저장'),
             ),
           ],
         ),
@@ -233,5 +293,3 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
     );
   }
 }
-
-
