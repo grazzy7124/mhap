@@ -455,6 +455,19 @@ class _MapScreenState extends State<MapScreen> {
     // 현재는 구현하지 않음 (마커 탭 시에만 표시)
   }
 
+  /// 마커 위젯들을 생성 (RepaintBoundary로 감싸서 비트맵 변환 가능하게)
+  List<Widget> _buildHiddenMarkerWidgets() {
+    return _markerKeys.entries.map((entry) {
+      final friendName = entry.key;
+      final key = entry.value;
+      return Positioned(
+        left: -1000, // 화면 밖에 위치시켜 숨김
+        top: -1000,
+        child: MarkerWidget(friendName: friendName, markerKey: key),
+      );
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -494,6 +507,9 @@ class _MapScreenState extends State<MapScreen> {
               currentPosition: _currentPosition,
             ),
           ),
+          
+          // 마커 위젯들 (비트맵 변환을 위해 숨김 처리)
+          ..._buildHiddenMarkerWidgets(),
         ],
       ),
     );
