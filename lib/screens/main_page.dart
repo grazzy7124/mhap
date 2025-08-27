@@ -48,19 +48,19 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Whatapp'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'logout') _logout();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'logout', child: Text('로그아웃')),
-            ],
-          ),
-        ],
-      ),
+      // appBar: AppBar(
+      //   title: const Text('Whatapp'),
+      //   actions: [
+      //     PopupMenuButton<String>(
+      //       onSelected: (value) {
+      //         if (value == 'logout') _logout();
+      //       },
+      //       itemBuilder: (context) => const [
+      //         PopupMenuItem(value: 'logout', child: Text('로그아웃')),
+      //       ],
+      //     ),
+      //   ],
+      // ),
       body: PageView(
         controller: _pageController,
         onPageChanged: (idx) => setState(() => _currentIndex = idx),

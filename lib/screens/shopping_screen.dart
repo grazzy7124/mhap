@@ -99,15 +99,19 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
       appBar: AppBar(
         title: const Text(
           '쇼핑',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.shopping_cart),
+            icon: const Icon(Icons.arrow_forward, color: Colors.black,),
+            onPressed: () {
+              Navigator.pushNamed(context, '/main'); // 👉 /main으로 이동
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.shopping_cart, color: Colors.black,),
             onPressed: () {
               // 장바구니 페이지로 이동
             },
@@ -163,9 +167,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
           ),
 
           // 상품 목록
-          Expanded(
-            child: _buildProductList(),
-          ),
+          Expanded(child: _buildProductList()),
         ],
       ),
     );
@@ -191,7 +193,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.68,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -245,6 +247,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     item.name,
@@ -258,14 +261,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                   const SizedBox(height: 4),
                   Text(
                     item.description,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const Spacer(),
+                  // const Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -277,9 +277,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: item.isUnlocked ? null : () {
-                          _purchaseItem(item);
-                        },
+                        onPressed: item.isUnlocked
+                            ? null
+                            : () {
+                                _purchaseItem(item);
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: item.isUnlocked
                               ? Colors.grey
@@ -326,7 +328,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                 item.isUnlocked = true;
               });
               Navigator.pop(context);
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('${item.name} 구매 완료!'),
