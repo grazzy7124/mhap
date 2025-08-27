@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:camera/camera.dart';
 import 'dart:io';
 
 /// 카메라 화면
@@ -29,7 +30,8 @@ class _CameraScreenState extends State<CameraScreen> {
   String? _locationName; // 위치 이름 (현재는 TODO 상태)
 
   // 카메라 관련 상태
-  final bool _isCameraInitialized = false; // 카메라 초기화 상태
+  CameraController? _cameraController;
+  Future<void>? _initializeControllerFuture;
   String? _selectedImagePath; // 선택된 이미지 경로
 
   @override
@@ -37,6 +39,29 @@ class _CameraScreenState extends State<CameraScreen> {
     super.initState();
     // 화면 초기화 시 위치 권한 확인 및 현재 위치 가져오기
     _checkLocationPermission();
+    _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      final cameras = await availableCameras();
+      // 후면 카메라 우선 선택
+      final back = cameras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+      final controller = CameraController(
+        back,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+      _cameraController = controller;
+      _initializeControllerFuture = controller.initialize();
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('카메라 초기화 실패: $e');
+    }
   }
 
   /// 위치 권한을 확인하고 현재 위치를 가져오는 메서드
@@ -134,21 +159,35 @@ class _CameraScreenState extends State<CameraScreen> {
         _isLoading = true;
       });
 
-      // 카메라로 사진 촬영
-      final XFile? photo = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 80, // 이미지 품질 (0-100)
-        preferredCameraDevice: CameraDevice.rear, // 후면 카메라 우선
-      );
+      XFile? photo;
+      if (_cameraController != null && _cameraController!.value.isInitialized) {
+        await _initializeControllerFuture;
+        photo = await _cameraController!.takePicture();
+      } else {
+        // fallback: 기존 picker 사용
+        photo = await _picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 80,
+          preferredCameraDevice: CameraDevice.rear,
+        );
+      }
 
       if (photo != null) {
         setState(() {
-          _selectedImagePath = photo.path;
+          _selectedImagePath = photo!.path;
           _isLoading = false;
         });
 
         // TODO: 사진과 위치 정보를 Firebase에 업로드
         await _processPhoto(photo.path);
+
+        // 촬영 후 리뷰 작성 화면으로 이동
+        if (!mounted) return;
+        Navigator.pushNamed(
+          context,
+          '/review',
+          arguments: {'imagePath': photo.path},
+        );
       } else {
         setState(() {
           _isLoading = false;
@@ -184,7 +223,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
       if (image != null) {
         setState(() {
-          _selectedImagePath = image.path;
+          _selectedImagePath = image!.path;
           _isLoading = false;
         });
 
@@ -205,6 +244,12 @@ class _CameraScreenState extends State<CameraScreen> {
         _showErrorDialog('갤러리에서 사진을 선택할 수 없습니다: $e');
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
   }
 
   /// 선택된 사진을 처리하는 메서드
@@ -366,107 +411,48 @@ class _CameraScreenState extends State<CameraScreen> {
               // 상단 툴바
               Container(
                 padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // 뒤로가기 버튼
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                      onPressed: () {
-                        // TODO: 이전 화면으로 이동
-                      },
-                    ),
-
-                    // 위치 정보 표시
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _locationName ?? '위치 확인 중...',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // 플래시 토글 버튼
-                    IconButton(
-                      icon: Icon(
-                        _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                      onPressed: _toggleFlash,
-                    ),
-                  ],
-                ),
               ),
 
-              // 카메라 프리뷰 영역 (현재는 플레이스홀더)
+              // 카메라 프리뷰 영역
               Expanded(
                 child: Container(
                   margin: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: Colors.black,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.3),
                       width: 2,
                     ),
                   ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.camera_alt,
-                          size: 80,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '카메라 프리뷰',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                  clipBehavior: Clip.hardEdge,
+                  child: (_cameraController != null)
+                      ? FutureBuilder<void>(
+                          future: _initializeControllerFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.done) {
+                              return GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: _isLoading ? null : _takePhoto,
+                                child: CameraPreview(_cameraController!),
+                              );
+                            } else {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                          },
+                        )
+                      : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.camera_alt, color: Colors.white54, size: 48),
+                              SizedBox(height: 12),
+                              Text('카메라 초기화 중...', style: TextStyle(color: Colors.white70)),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '실제 카메라 기능은\n향후 구현 예정입니다',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
 
@@ -575,6 +561,81 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  /// 친구 추가 다이얼로그 표시
+  void _showAddFriendDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            '친구 추가',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '친구를 추가하려면 사용자 ID를 입력하세요.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: '사용자 ID 입력',
+                  hintStyle: const TextStyle(color: Colors.white54),
+                  filled: true,
+                  fillColor: Colors.grey[800],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.blue, width: 2),
+                  ),
+                ),
+                onChanged: (value) {
+                  // TODO: 입력된 사용자 ID 저장
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                '취소',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // TODO: 친구 추가 로직 구현
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('친구 추가 기능은 준비 중입니다.'),
+                    backgroundColor: Colors.blue,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('추가'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
