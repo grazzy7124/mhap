@@ -188,7 +188,7 @@ class _MapScreenState extends State<MapScreen> {
         ),
       );
     } catch (e) {
-      print('현재 위치 가져오기 오류: $e');
+      debugPrint('현재 위치 가져오기 오류: $e');
       setState(() => _isLocationLoading = false);
     }
   }
@@ -249,111 +249,6 @@ class _MapScreenState extends State<MapScreen> {
         _buildCurrentLocationOverlay(),
       ],
     );
-  }
-
-  /// Apple Maps 스타일(커스텀) 데모 - 현재 미사용
-  Widget _buildAppleMapsStyle() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.blue, Colors.green],
-        ),
-      ),
-      child: Stack(
-        children: [
-          CustomPaint(painter: MapGridPainter(), size: Size.infinite),
-          if (_currentPosition != null)
-            Positioned(
-              left: MediaQuery.of(context).size.width / 2 - 15,
-              top: MediaQuery.of(context).size.height / 2 - 15,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.white, width: 3),
-                ),
-                child: const Icon(
-                  Icons.my_location,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-            ),
-          ..._buildAppleStyleMarkers(),
-          _buildCurrentLocationOverlay(),
-        ],
-      ),
-    );
-  }
-
-  /// Apple 스타일 마커(데모)
-  List<Widget> _buildAppleStyleMarkers() {
-    return _getFilteredLocations().map((location) {
-      double screenX =
-          (location.longitude + 180) / 360 * MediaQuery.of(context).size.width;
-      double screenY =
-          (90 - location.latitude) / 180 * MediaQuery.of(context).size.height;
-
-      return Positioned(
-        left: screenX - 25,
-        top: screenY - 25,
-        child: GestureDetector(
-          onTap: () => _showLocationDetails(location),
-          child: Column(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(color: Colors.white, width: 3),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Image.network(
-                    location.photoUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.photo, color: Colors.grey),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error, color: Colors.red),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  location.friendName[0],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }).toList();
   }
 
   /// Google Maps 마커 생성
