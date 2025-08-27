@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:camera/camera.dart';
+import 'package:geocoding/geocoding.dart';
 import 'dart:io';
 
 /// 카메라 화면
@@ -33,6 +34,13 @@ class _CameraScreenState extends State<CameraScreen> {
   CameraController? _cameraController;
   Future<void>? _initializeControllerFuture;
   String? _selectedImagePath; // 선택된 이미지 경로
+  
+  // 사용 가능한 카메라 목록과 현재 카메라
+  List<CameraDescription>? _availableCameras;
+  CameraDescription? _currentCamera;
+  
+  // 촬영 시 화면 플래시 효과
+  bool _showCaptureFlash = false;
 
   @override
   void initState() {
@@ -45,11 +53,13 @@ class _CameraScreenState extends State<CameraScreen> {
   Future<void> _initCamera() async {
     try {
       final cameras = await availableCameras();
+      _availableCameras = cameras;
       // 후면 카메라 우선 선택
       final back = cameras.firstWhere(
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
+      _currentCamera = back;
       final controller = CameraController(
         back,
         ResolutionPreset.high,
@@ -134,9 +144,6 @@ class _CameraScreenState extends State<CameraScreen> {
         _currentPosition = position;
         _isLoading = false;
       });
-
-      // TODO: 위치 이름을 가져오는 기능 구현 (Geocoding API 사용)
-      // _locationName = await _getLocationName(position.latitude, position.longitude);
     } catch (e) {
       print('현재 위치 가져오기 오류: $e');
       setState(() {
@@ -157,6 +164,12 @@ class _CameraScreenState extends State<CameraScreen> {
     try {
       setState(() {
         _isLoading = true;
+        _showCaptureFlash = true; // 플래시 효과 시작
+      });
+      // 짧은 플래시 표시
+      await Future.delayed(const Duration(milliseconds: 120));
+      setState(() {
+        _showCaptureFlash = false;
       });
 
       XFile? photo;
@@ -181,12 +194,36 @@ class _CameraScreenState extends State<CameraScreen> {
         // TODO: 사진과 위치 정보를 Firebase에 업로드
         await _processPhoto(photo.path);
 
+        // GPS 좌표를 주소로 변환
+        String? resolvedAddress;
+        if (_currentPosition != null) {
+          try {
+            List<Placemark> placemarks = await placemarkFromCoordinates(
+              _currentPosition!.latitude,
+              _currentPosition!.longitude,
+            );
+            if (placemarks.isNotEmpty) {
+              Placemark place = placemarks.first;
+              resolvedAddress = '${place.administrativeArea} ${place.subLocality} ${place.thoroughfare}'.trim();
+              if (resolvedAddress.isEmpty) {
+                resolvedAddress = '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}';
+              }
+            }
+          } catch (e) {
+            print('주소 변환 실패: $e');
+            resolvedAddress = '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}';
+          }
+        }
+
         // 촬영 후 리뷰 작성 화면으로 이동
         if (!mounted) return;
         Navigator.pushNamed(
           context,
           '/review',
-          arguments: {'imagePath': photo.path},
+          arguments: {
+            'imagePath': photo.path,
+            'address': resolvedAddress,
+          },
         );
       } else {
         setState(() {
@@ -197,6 +234,7 @@ class _CameraScreenState extends State<CameraScreen> {
       print('사진 촬영 오류: $e');
       setState(() {
         _isLoading = false;
+        _showCaptureFlash = false;
       });
 
       if (mounted) {
@@ -297,6 +335,34 @@ class _CameraScreenState extends State<CameraScreen> {
 
     // TODO: 실제 카메라 플래시 제어 구현
     print('플래시 ${_isFlashOn ? "켜짐" : "꺼짐"}');
+  }
+
+  /// 카메라 전환 메서드
+  Future<void> _switchCamera() async {
+    try {
+      if (_availableCameras == null || _availableCameras!.isEmpty) return;
+      final bool isBack = _currentCamera?.lensDirection == CameraLensDirection.back;
+      final CameraDescription next = _availableCameras!.firstWhere(
+        (c) => isBack ? c.lensDirection == CameraLensDirection.front : c.lensDirection == CameraLensDirection.back,
+        orElse: () => _availableCameras!.first,
+      );
+      if (_cameraController != null) {
+        await _cameraController!.dispose();
+      }
+      _currentCamera = next;
+      final controller = CameraController(
+        next,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+      setState(() {
+        _cameraController = controller;
+        _initializeControllerFuture = controller.initialize();
+      });
+    } catch (e) {
+      debugPrint('카메라 전환 실패: $e');
+    }
   }
 
   /// 위치 서비스 비활성화 다이얼로그를 표시하는 메서드
@@ -434,7 +500,41 @@ class _CameraScreenState extends State<CameraScreen> {
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: _isLoading ? null : _takePhoto,
-                                child: CameraPreview(_cameraController!),
+                                child: Center(
+                                  child: AspectRatio(
+                                    aspectRatio: 4 / 3,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        ClipRect(
+                                          child: FittedBox(
+                                            fit: BoxFit.cover,
+                                            child: SizedBox(
+                                              width: _cameraController!.value.previewSize?.width ?? 1080,
+                                              height: _cameraController!.value.previewSize?.height ?? 1920,
+                                              child: CameraPreview(_cameraController!),
+                                            ),
+                                          ),
+                                        ),
+                                        // 4:3 프레임 테두리
+                                        IgnorePointer(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              border: Border.all(color: Colors.white70, width: 2),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ),
+                                        // 라이트 그리드 (3x3)
+                                        IgnorePointer(
+                                          child: CustomPaint(
+                                            painter: _GridOverlayPainter(),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               );
                             } else {
                               return const Center(
@@ -458,7 +558,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
               // 하단 컨트롤 버튼들
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 30),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -467,15 +567,10 @@ class _CameraScreenState extends State<CameraScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: IconButton(
-                        icon: const Icon(
-                          Icons.photo_library,
-                          color: Colors.white,
-                          size: 30,
-                        ),
+                        icon: Image.asset('assets/images/gallery.png'),
                         onPressed: _isLoading ? null : _pickFromGallery,
                       ),
                     ),
@@ -485,40 +580,24 @@ class _CameraScreenState extends State<CameraScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: Colors.white,
                         borderRadius: BorderRadius.circular(40),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
                           width: 4,
                         ),
                       ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.camera,
-                          color: Colors.black,
-                          size: 40,
-                        ),
-                        onPressed: _isLoading ? null : _takePhoto,
+                      child: GestureDetector(
+                        onTap: _isLoading ? null : _takePhoto,
+                        child: Image.asset('assets/images/Shutter.png'),
                       ),
                     ),
 
-                    // 설정 버튼
+                    // 카메라 전환 버튼
                     Container(
                       width: 60,
                       height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
                       child: IconButton(
-                        icon: const Icon(
-                          Icons.settings,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                        onPressed: () {
-                          // TODO: 카메라 설정 화면으로 이동
-                        },
+                        icon: Image.asset('assets/images/Camera flip.png'),
+                        onPressed: _isLoading ? null : _switchCamera,
                       ),
                     ),
                   ],
@@ -537,6 +616,10 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
               ),
             ),
+
+          // 캡처 플래시 오버레이
+          if (_showCaptureFlash)
+            Container(color: Colors.white.withOpacity(0.7)),
 
           // 선택된 이미지 표시 (임시)
           if (_selectedImagePath != null)
@@ -563,79 +646,29 @@ class _CameraScreenState extends State<CameraScreen> {
       ),
     );
   }
+}
 
-  /// 친구 추가 다이얼로그 표시
-  void _showAddFriendDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey[900],
-          title: const Text(
-            '친구 추가',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '친구를 추가하려면 사용자 ID를 입력하세요.',
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: '사용자 ID 입력',
-                  hintStyle: const TextStyle(color: Colors.white54),
-                  filled: true,
-                  fillColor: Colors.grey[800],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.blue, width: 2),
-                  ),
-                ),
-                onChanged: (value) {
-                  // TODO: 입력된 사용자 ID 저장
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                '취소',
-                style: TextStyle(color: Colors.white70),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: 친구 추가 로직 구현
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('친구 추가 기능은 준비 중입니다.'),
-                    backgroundColor: Colors.blue,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('추가'),
-            ),
-          ],
-        );
-      },
-    );
+/// 그리드 오버레이를 그리는 CustomPainter
+class _GridOverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint line = Paint()
+      ..color = Colors.white24
+      ..strokeWidth = 1;
+
+    // 세로 2줄 (3x3 그리드)
+    final double v1 = size.width / 3;
+    final double v2 = v1 * 2;
+    canvas.drawLine(Offset(v1, 0), Offset(v1, size.height), line);
+    canvas.drawLine(Offset(v2, 0), Offset(v2, size.height), line);
+
+    // 가로 2줄
+    final double h1 = size.height / 3;
+    final double h2 = h1 * 2;
+    canvas.drawLine(Offset(0, h1), Offset(size.width, h1), line);
+    canvas.drawLine(Offset(0, h2), Offset(size.width, h2), line);
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -122,6 +122,34 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
     }
   }
 
+  /// 구매 확인 후 진행
+  Future<void> _confirmAndPurchase(int itemIndex) async {
+    final int price = _itemPrices[itemIndex];
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('구매 확인'),
+          content: Text('이 아이템을 ${price} 코인으로 구매하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('아니오'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('예'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _purchaseItem(itemIndex);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -211,7 +239,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
   /// 이미지 아이템을 구성하는 메서드
   Widget _buildImageItem(String imageAsset, int index) {
     return GestureDetector(
-      onTap: () => _purchaseItem(index),
+      onTap: () => _confirmAndPurchase(index),
       child: Container(
         decoration: BoxDecoration(
           // color: Colors.grey.shade900,
@@ -247,7 +275,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                   width: 63,
                   height: 27,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    // color: Colors.white,
                     borderRadius: BorderRadius.circular(35.0),
                   ),
                   child: Row(
