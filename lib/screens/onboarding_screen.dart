@@ -70,28 +70,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  Future<void> _handleAppleSignIn() async {
-    if (_isLoading) return;
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      await FirebaseService.signInWithApple();
-      await _afterLoginSuccess();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('애플 로그인 실패: ' + e.toString())));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
   /// 모드 전환(로그인<->회원가입)
   void _toggleMode() {
     setState(() {
@@ -149,37 +127,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    GestureDetector(
-                      onTap: _isLoading ? null : _handleAppleSignIn,
-                      child: Container(
-                        width: 278,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Color(0xffF0F0F0),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(width: 8),
-                            Image.asset(
-                              'assets/images/apple.png',
-                              width: 23,
-                              height: 29,
-                            ),
-                            SizedBox(width: 46),
-                            Text(_isLoading ? '처리 중...' : '애플 계정으로 로그인'),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_isLoading) ...[
-                      const SizedBox(height: 16),
-                      const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ],
                   ],
                 ),
               ),

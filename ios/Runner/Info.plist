@@ -22,35 +22,44 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1038389858842-fao3nue9kkrtiismvo70sr950a1p9t49</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>firebase</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-1038389858842-ios-52672242fcc9eeebb977a3</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GMSApiKey</key>
+	<string>AIzaSyCGgn6uldBF3G9iBsAoRgYFrP4w4Ptd7uU</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	
-	<!-- 위치 권한 -->
+	<key>NSCameraUsageDescription</key>
+	<string>이 앱은 사진 촬영을 위해 카메라 권한이 필요합니다.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>이 앱은 백그라운드에서도 위치 추적을 위해 위치 권한이 필요합니다.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>이 앱은 백그라운드에서도 위치 추적을 위해 위치 권한이 필요합니다.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>이 앱은 실시간 위치 추적을 위해 위치 권한이 필요합니다.</string>
-	
-	<!-- 카메라 권한 -->
-	<key>NSCameraUsageDescription</key>
-	<string>이 앱은 사진 촬영을 위해 카메라 권한이 필요합니다.</string>
-	
-	<!-- 갤러리 권한 -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>이 앱은 사진 선택을 위해 갤러리 접근 권한이 필요합니다.</string>
-	
-	<!-- 마이크 권한 (동영상 촬영 시) -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>이 앱은 동영상 촬영을 위해 마이크 권한이 필요합니다.</string>
-	
-	<!-- Google Maps API 키 -->
-	<key>GMSApiKey</key>
-	<string>AIzaSyCGgn6uldBF3G9iBsAoRgYFrP4w4Ptd7uU</string>
-	
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>이 앱은 사진 선택을 위해 갤러리 접근 권한이 필요합니다.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
