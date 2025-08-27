@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:whatapp/mainpage/startscreenpage.dart';
+import 'package:whatapp/onboarding.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
