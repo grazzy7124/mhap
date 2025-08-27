@@ -4,7 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:io';
 
 /// 카메라 화면
-/// 
+///
 /// 이 화면은 사용자가 사진을 찍거나 갤러리에서 사진을 선택할 수 있는 화면입니다.
 /// 주요 기능:
 /// - 카메라로 사진 촬영
@@ -21,15 +21,15 @@ class CameraScreen extends StatefulWidget {
 
 class _CameraScreenState extends State<CameraScreen> {
   final ImagePicker _picker = ImagePicker(); // 이미지 선택기
-  
+
   // 현재 상태 관리
   bool _isLoading = false; // 로딩 상태
   bool _isFlashOn = false; // 플래시 상태
   Position? _currentPosition; // 현재 GPS 위치
   String? _locationName; // 위치 이름 (현재는 TODO 상태)
-  
+
   // 카메라 관련 상태
-  bool _isCameraInitialized = false; // 카메라 초기화 상태
+  final bool _isCameraInitialized = false; // 카메라 초기화 상태
   String? _selectedImagePath; // 선택된 이미지 경로
 
   @override
@@ -40,7 +40,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 위치 권한을 확인하고 현재 위치를 가져오는 메서드
-  /// 
+  ///
   /// 이 메서드는 앱이 시작될 때 실행되며:
   /// 1. 위치 권한이 허용되었는지 확인합니다
   /// 2. 권한이 없다면 사용자에게 요청합니다
@@ -90,7 +90,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 현재 위치를 가져오는 메서드
-  /// 
+  ///
   /// GPS를 통해 현재 위치 정보를 가져와서 상태에 저장합니다.
   /// 위치 정보는 사진과 함께 Firebase에 업로드될 예정입니다.
   Future<void> _getCurrentLocation() async {
@@ -112,13 +112,12 @@ class _CameraScreenState extends State<CameraScreen> {
 
       // TODO: 위치 이름을 가져오는 기능 구현 (Geocoding API 사용)
       // _locationName = await _getLocationName(position.latitude, position.longitude);
-      
     } catch (e) {
       print('현재 위치 가져오기 오류: $e');
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         _showErrorDialog('현재 위치를 가져올 수 없습니다: $e');
       }
@@ -126,7 +125,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 카메라로 사진을 촬영하는 메서드
-  /// 
+  ///
   /// 기기의 카메라를 열어 사진을 촬영합니다.
   /// 촬영된 사진은 임시 파일로 저장되고, 위치 정보와 함께 처리됩니다.
   Future<void> _takePhoto() async {
@@ -160,7 +159,7 @@ class _CameraScreenState extends State<CameraScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         _showErrorDialog('사진 촬영 중 오류가 발생했습니다: $e');
       }
@@ -168,7 +167,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 갤러리에서 사진을 선택하는 메서드
-  /// 
+  ///
   /// 기기의 갤러리(사진 앱)를 열어 기존 사진을 선택합니다.
   /// 선택된 사진은 위치 정보와 함께 처리됩니다.
   Future<void> _pickFromGallery() async {
@@ -201,7 +200,7 @@ class _CameraScreenState extends State<CameraScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         _showErrorDialog('갤러리에서 사진을 선택할 수 없습니다: $e');
       }
@@ -209,7 +208,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 선택된 사진을 처리하는 메서드
-  /// 
+  ///
   /// 촬영되거나 선택된 사진을 처리합니다.
   /// 현재는 TODO 상태이며, 향후 Firebase에 업로드하는 기능을 구현할 예정입니다.
   Future<void> _processPhoto(String imagePath) async {
@@ -218,9 +217,9 @@ class _CameraScreenState extends State<CameraScreen> {
       // 1. 이미지를 Firebase Storage에 업로드
       // 2. 위치 정보와 함께 Firestore에 메타데이터 저장
       // 3. 업로드 완료 후 사용자에게 알림
-      
+
       await Future.delayed(const Duration(seconds: 2)); // 임시 딜레이
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -228,7 +227,7 @@ class _CameraScreenState extends State<CameraScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // 선택된 이미지 초기화
         setState(() {
           _selectedImagePath = null;
@@ -243,20 +242,20 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 플래시를 토글하는 메서드
-  /// 
+  ///
   /// 카메라의 플래시를 켜거나 끕니다.
   /// 현재는 TODO 상태이며, 실제 카메라 플래시 제어 기능을 구현할 예정입니다.
   void _toggleFlash() {
     setState(() {
       _isFlashOn = !_isFlashOn;
     });
-    
+
     // TODO: 실제 카메라 플래시 제어 구현
     print('플래시 ${_isFlashOn ? "켜짐" : "꺼짐"}');
   }
 
   /// 위치 서비스 비활성화 다이얼로그를 표시하는 메서드
-  /// 
+  ///
   /// 사용자의 위치 서비스가 비활성화되어 있을 때 표시됩니다.
   /// 설정으로 이동할 수 있는 옵션을 제공합니다.
   void _showLocationServiceDialog() {
@@ -283,7 +282,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 위치 권한 거부 다이얼로그를 표시하는 메서드
-  /// 
+  ///
   /// 사용자가 위치 권한을 거부했을 때 표시됩니다.
   /// 권한을 다시 요청할 수 있는 옵션을 제공합니다.
   void _showPermissionDeniedDialog() {
@@ -310,7 +309,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 위치 권한 영구 거부 다이얼로그를 표시하는 메서드
-  /// 
+  ///
   /// 사용자가 위치 권한을 영구적으로 거부했을 때 표시됩니다.
   /// 앱 설정에서 수동으로 권한을 허용해야 합니다.
   void _showPermissionPermanentlyDeniedDialog() {
@@ -337,7 +336,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 오류 다이얼로그를 표시하는 메서드
-  /// 
+  ///
   /// 다양한 오류 상황에서 사용자에게 오류 메시지를 표시합니다.
   void _showErrorDialog(String message) {
     showDialog(
@@ -372,15 +371,22 @@ class _CameraScreenState extends State<CameraScreen> {
                   children: [
                     // 뒤로가기 버튼
                     IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 30,
+                      ),
                       onPressed: () {
                         // TODO: 이전 화면으로 이동
                       },
                     ),
-                    
+
                     // 위치 정보 표시
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(20),
@@ -388,7 +394,11 @@ class _CameraScreenState extends State<CameraScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.location_on, color: Colors.white, size: 16),
+                          const Icon(
+                            Icons.location_on,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             _locationName ?? '위치 확인 중...',
@@ -401,7 +411,7 @@ class _CameraScreenState extends State<CameraScreen> {
                         ],
                       ),
                     ),
-                    
+
                     // 플래시 토글 버튼
                     IconButton(
                       icon: Icon(
@@ -414,7 +424,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   ],
                 ),
               ),
-              
+
               // 카메라 프리뷰 영역 (현재는 플레이스홀더)
               Expanded(
                 child: Container(
@@ -422,7 +432,10 @@ class _CameraScreenState extends State<CameraScreen> {
                   decoration: BoxDecoration(
                     color: Colors.grey[900],
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
                   ),
                   child: Center(
                     child: Column(
@@ -456,7 +469,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   ),
                 ),
               ),
-              
+
               // 하단 컨트롤 버튼들
               Container(
                 padding: const EdgeInsets.all(20),
@@ -472,11 +485,15 @@ class _CameraScreenState extends State<CameraScreen> {
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.photo_library, color: Colors.white, size: 30),
+                        icon: const Icon(
+                          Icons.photo_library,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                         onPressed: _isLoading ? null : _pickFromGallery,
                       ),
                     ),
-                    
+
                     // 촬영 버튼
                     Container(
                       width: 80,
@@ -484,14 +501,21 @@ class _CameraScreenState extends State<CameraScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(40),
-                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 4),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 4,
+                        ),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.camera, color: Colors.black, size: 40),
+                        icon: const Icon(
+                          Icons.camera,
+                          color: Colors.black,
+                          size: 40,
+                        ),
                         onPressed: _isLoading ? null : _takePhoto,
                       ),
                     ),
-                    
+
                     // 설정 버튼
                     Container(
                       width: 60,
@@ -501,7 +525,11 @@ class _CameraScreenState extends State<CameraScreen> {
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.settings, color: Colors.white, size: 30),
+                        icon: const Icon(
+                          Icons.settings,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                         onPressed: () {
                           // TODO: 카메라 설정 화면으로 이동
                         },
@@ -512,7 +540,7 @@ class _CameraScreenState extends State<CameraScreen> {
               ),
             ],
           ),
-          
+
           // 로딩 오버레이
           if (_isLoading)
             Container(
@@ -523,7 +551,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
               ),
             ),
-          
+
           // 선택된 이미지 표시 (임시)
           if (_selectedImagePath != null)
             Positioned(

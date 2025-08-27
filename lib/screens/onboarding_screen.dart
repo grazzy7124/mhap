@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'main_page.dart';
 
 /// 온보딩 화면
 ///
@@ -107,7 +105,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         prefixIcon: Icon(Icons.lock_outline),
                       ),
                       validator: (value) {
-                        if (value == null || value.length < 6) return '6자 이상 입력하세요';
+                        if (value == null || value.length < 6)
+                          return '6자 이상 입력하세요';
                         return null;
                       },
                     ),
@@ -128,7 +127,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // 모드 전환 텍스트 버튼
               TextButton(
                 onPressed: _toggleMode,
-                child: Text(_isLoginMode ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'),
+                child: Text(
+                  _isLoginMode ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인',
+                ),
               ),
             ],
           ),
