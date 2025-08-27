@@ -8,6 +8,7 @@ import 'screens/main_page.dart';
 import 'screens/friends_manage_screen.dart';
 import 'screens/shopping_screen.dart';
 import 'screens/upload_screen.dart';
+import 'screens/review_form_screen.dart';
 import 'services/firebase_service.dart';
 
 /// 앱 진입 파일(main.dart)
@@ -58,6 +59,14 @@ class MyApp extends StatelessWidget {
         '/friends': (context) => const FriendsManageScreen(),
         '/shopping': (context) => const ShoppingScreen(),
         '/upload': (context) => const UploadScreen(),
+        '/review': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          String? imagePath;
+          if (args is Map && args['imagePath'] is String) {
+            imagePath = args['imagePath'] as String;
+          }
+          return ReviewFormScreen(initialImagePath: imagePath);
+        },
       },
     );
   }
