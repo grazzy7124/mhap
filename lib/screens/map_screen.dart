@@ -44,6 +44,99 @@ class _MapScreenState extends State<MapScreen> {
   List<MapLocation> _firestoreLocations = []; // Firestore에서 가져온 리뷰 위치들
   bool _isLoadingReviews = false;
 
+  // 더미 데이터 (Firestore에 데이터가 없을 때 사용)
+  final List<MapLocation> _dummyLocations = [
+    MapLocation(
+      id: 'dummy1',
+      name: '포항 해변 카페',
+      latitude: 36.081489,
+      longitude: 129.395523,
+      reviews: [
+        Review(
+          id: 'review1',
+          friendName: '기노은',
+          timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+          photoUrl: 'https://via.placeholder.com/150',
+          comment: '바다가 보이는 아름다운 카페예요! ☕',
+        ),
+        Review(
+          id: 'review2',
+          friendName: '권하민',
+          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+          photoUrl: 'https://via.placeholder.com/150',
+          comment: '커피 맛있고 분위기 좋아요 🌊',
+        ),
+      ],
+    ),
+    MapLocation(
+      id: 'dummy2',
+      name: '포항 맛집 거리',
+      latitude: 36.075489,
+      longitude: 129.385523,
+      reviews: [
+        Review(
+          id: 'review3',
+          friendName: '정태주',
+          timestamp: DateTime.now().subtract(const Duration(hours: 3)),
+          photoUrl: 'https://via.placeholder.com/150',
+          comment: '신선한 해산물이 정말 맛있어요 🦐',
+        ),
+      ],
+    ),
+    MapLocation(
+      id: 'dummy3',
+      name: '포항 공원',
+      latitude: 36.085489,
+      longitude: 129.405523,
+      reviews: [
+        Review(
+          id: 'review4',
+          friendName: '박예은',
+          timestamp: DateTime.now().subtract(const Duration(hours: 4)),
+          photoUrl: 'https://via.placeholder.com/150',
+          comment: '산책하기 좋은 공원이에요 🌳',
+        ),
+        Review(
+          id: 'review5',
+          friendName: '이찬민',
+          timestamp: DateTime.now().subtract(const Duration(hours: 5)),
+          photoUrl: 'https://via.placeholder.com/150',
+          comment: '아이들과 놀기 좋아요 🎈',
+        ),
+      ],
+    ),
+    MapLocation(
+      id: 'dummy4',
+      name: '포항 전망대',
+      latitude: 36.070489,
+      longitude: 129.390523,
+      reviews: [
+        Review(
+          id: 'review6',
+          friendName: '기노은',
+          timestamp: DateTime.now().subtract(const Duration(hours: 6)),
+          photoUrl: 'https://via.placeholder.com/150',
+          comment: '포항 시내가 한눈에 보여요 🏙️',
+        ),
+      ],
+    ),
+    MapLocation(
+      id: 'dummy5',
+      name: '포항 해변',
+      latitude: 36.078489,
+      longitude: 129.400523,
+      reviews: [
+        Review(
+          id: 'review7',
+          friendName: '권하민',
+          timestamp: DateTime.now().subtract(const Duration(hours: 7)),
+          photoUrl: 'https://via.placeholder.com/150',
+          comment: '일몰이 정말 아름다워요 🌅',
+        ),
+      ],
+    ),
+  ];
+
   // 지도 설정: 초기 카메라 위치(포항)
   CameraPosition _initialCameraPosition = const CameraPosition(
     target: LatLng(36.081489, 129.395523), // 포항 시내 중심
@@ -201,10 +294,13 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /// 친구 필터 적용된 위치 목록 반환
+  /// 친구 필터 적용된 위치 목록 반환 (하이브리드 방식)
   List<MapLocation> _getFilteredLocations() {
-    if (_selectedFriend == 'all') return _firestoreLocations;
-    return _firestoreLocations
+    // Firestore에 데이터가 있으면 사용, 없으면 목데이터 사용
+    final locations = _firestoreLocations.isNotEmpty ? _firestoreLocations : _dummyLocations;
+    
+    if (_selectedFriend == 'all') return locations;
+    return locations
         .where((l) => l.reviews.any((r) => r.friendName == _selectedFriend))
         .toList();
   }
@@ -298,88 +394,53 @@ class _MapScreenState extends State<MapScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // 장소 이름 헤더
+              // 위치 이름과 리뷰 수
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  location.name,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 리뷰 개수 표시
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.photo_library,
-                      color: Colors.grey[600],
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${location.reviews.length}개의 리뷰',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            location.name,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${location.reviews.length}개의 리뷰',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // 인스타그램 스타일 리뷰 피드
+              // 리뷰 목록
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: location.reviews.length,
                   itemBuilder: (context, index) {
                     final review = location.reviews[index];
-                    return ReviewCard(review: review, isFirst: index == 0);
+                    return ReviewCard(
+                      review: review,
+                      isFirst: index == 0,
+                    );
                   },
-                ),
-              ),
-
-              // 하단 버튼들
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _openDirections(location),
-                        icon: const Icon(Icons.directions),
-                        label: const Text('길찾기'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _shareLocation(location),
-                        icon: const Icon(Icons.share),
-                        label: const Text('공유'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],
@@ -389,116 +450,49 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// 상세 시트 닫기
+  /// 위치 상세 정보 숨기기
   void _hideLocationDetails() {
-    Navigator.of(context).pop();
-  }
-
-  /// 길찾기 열기(플랫폼별 기본 지도 앱)
-  void _openDirections(MapLocation location) {
-    if (Platform.isIOS) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Apple Maps에서 길찾기를 열어드립니다'),
-          backgroundColor: Colors.blue,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Google Maps에서 길찾기를 열어드립니다'),
-          backgroundColor: Colors.blue,
-        ),
-      );
-    }
-  }
-
-  /// 위치 공유(데모)
-  void _shareLocation(MapLocation location) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${location.name} 위치를 공유합니다'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  /// 현재 위치로 카메라 이동
-  void _goToMyLocation() {
-    if (_currentPosition != null && _mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(
-              _currentPosition!.latitude,
-              _currentPosition!.longitude,
-            ),
-            zoom: 15.0,
-          ),
-        ),
-      );
-    } else {
-      _getCurrentLocation();
-    }
-  }
-
-  /// 확대/축소
-  void _zoomIn() => _mapController?.animateCamera(CameraUpdate.zoomIn());
-  void _zoomOut() => _mapController?.animateCamera(CameraUpdate.zoomOut());
-
-  /// 마커 위젯들을 생성 (RepaintBoundary로 감싸서 비트맵 변환 가능하게)
-  List<Widget> _buildHiddenMarkerWidgets() {
-    return _markerKeys.entries.map((entry) {
-      final friendName = entry.key;
-      final key = entry.value;
-      return Positioned(
-        left: -1000, // 화면 밖에 위치시켜 숨김
-        top: -1000,
-        child: MarkerWidget(friendName: friendName, markerKey: key),
-      );
-    }).toList();
+    // 현재는 구현하지 않음 (마커 탭 시에만 표시)
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.camera_alt, color: Colors.black), // 카메라 아이콘
-          onPressed: () {
-            // PageView에서 카메라 탭(인덱스 0)으로 이동
-            Navigator.pushReplacementNamed(context, '/main');
-          },
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart, color: Colors.black),
-            onPressed: () {
-              // 장바구니 페이지로 이동
-            },
-          ),
-        ],
-      ),
       body: Stack(
         children: [
-          // 메인 지도
+          // 지도
           _buildCrossPlatformMap(),
+          
           // 상단 친구 필터
-          FriendFilterWidget(
-            selectedFriend: _selectedFriend,
-            friends: _friends,
-            onFriendSelected: (friend) => setState(() => _selectedFriend = friend),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            right: 16,
+            child: FriendFilterWidget(
+              selectedFriend: _selectedFriend,
+              friends: _friends,
+              onFriendSelected: (friend) {
+                setState(() {
+                  _selectedFriend = friend;
+                });
+              },
+            ),
           ),
-          // 마커 위젯들 (비트맵 변환을 위해 숨김 처리)
-          ..._buildHiddenMarkerWidgets(),
-          // 우측 하단 컨트롤 버튼들
-          MapControlButtons(
-            onMyLocation: _goToMyLocation,
-            onZoomIn: _zoomIn,
-            onZoomOut: _zoomOut,
-            currentPosition: _currentPosition,
+          
+          // 우측 하단 지도 컨트롤 버튼들
+          Positioned(
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            right: 16,
+            child: MapControlButtons(
+              onMyLocation: _getCurrentLocation,
+              onZoomIn: () {
+                _mapController?.animateCamera(CameraUpdate.zoomIn());
+              },
+              onZoomOut: () {
+                _mapController?.animateCamera(CameraUpdate.zoomOut());
+              },
+              currentPosition: _currentPosition,
+            ),
           ),
         ],
       ),
