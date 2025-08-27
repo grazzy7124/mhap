@@ -57,12 +57,13 @@ class _UploadScreenState extends State<UploadScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AspectRatio(
-              aspectRatio: 1,
+              aspectRatio: 4 / 3,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: Colors.grey[200],
                 ),
+                clipBehavior: Clip.hardEdge,
                 child: _pickedImagePath == null
                     ? Center(
                         child: TextButton.icon(
@@ -71,7 +72,14 @@ class _UploadScreenState extends State<UploadScreen> {
                           label: const Text('사진 선택'),
                         ),
                       )
-                    : const Center(child: Icon(Icons.photo, size: 64)),
+                    : FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: 1920,
+                          height: 1440,
+                          child: const Center(child: Icon(Icons.photo, size: 64)), // TODO: 실제 이미지 위젯으로 교체
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 16),
