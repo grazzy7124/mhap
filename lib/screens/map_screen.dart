@@ -35,60 +35,101 @@ class _MapScreenState extends State<MapScreen> {
 
   // 친구 필터링 상태
   String _selectedFriend = 'all'; // 'all'은 전체
-  final List<String> _friends = ['all', '나', '김철수', '이영희', '박민수', '정수진'];
+  final List<String> _friends = ['all', '기노은', '권하민', '정태주', '박예은', '이찬민'];
 
-  // 지도 마커 더미 데이터
+  // 지도 마커 더미 데이터 (포항 지역)
   final List<MapLocation> _locations = [
     MapLocation(
       id: '1',
-      name: '스타벅스 강남점',
-      latitude: 37.5665,
-      longitude: 126.9780,
-      friendName: '나',
-      photoUrl: 'https://picsum.photos/200/200?random=1',
+      name: '카츠닉',
+      latitude: 36.073091,
+      longitude: 129.404963,
+      friendName: '기노은',
+      photoUrl: 'https://via.placeholder.com/150/FF6B6B/FFFFFF?text=카츠닉',
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
     ),
     MapLocation(
       id: '2',
-      name: '올리브영 명동점',
-      latitude: 37.5636,
-      longitude: 126.9834,
-      friendName: '김철수',
-      photoUrl: 'https://picsum.photos/200/200?random=2',
+      name: '고바우 식당',
+      latitude: 36.040135,
+      longitude: 129.364282,
+      friendName: '권하민',
+      photoUrl: 'https://via.placeholder.com/150/4ECDC4/FFFFFF?text=고바우',
       timestamp: DateTime.now().subtract(const Duration(hours: 4)),
     ),
     MapLocation(
       id: '3',
-      name: '이마트 잠실점',
-      latitude: 37.5139,
-      longitude: 127.1006,
-      friendName: '이영희',
-      photoUrl: 'https://picsum.photos/200/200?random=3',
+      name: '컴포터블 피자',
+      latitude: 36.088487,
+      longitude: 129.390091,
+      friendName: '정태주',
+      photoUrl: 'https://via.placeholder.com/150/45B7D1/FFFFFF?text=컴포터블',
       timestamp: DateTime.now().subtract(const Duration(days: 1)),
     ),
     MapLocation(
       id: '4',
-      name: '홈플러스 영등포점',
-      latitude: 37.5260,
-      longitude: 126.9251,
-      friendName: '박민수',
-      photoUrl: 'https://picsum.photos/200/200?random=4',
+      name: '베라보 제면소',
+      latitude: 36.081489,
+      longitude: 129.399139,
+      friendName: '박예은',
+      photoUrl: 'https://via.placeholder.com/150/96CEB4/FFFFFF?text=베라보',
       timestamp: DateTime.now().subtract(const Duration(days: 2)),
     ),
     MapLocation(
       id: '5',
-      name: '롯데마트 잠실점',
-      latitude: 37.5139,
-      longitude: 127.1006,
-      friendName: '정수진',
-      photoUrl: 'https://picsum.photos/200/200?random=5',
+      name: '라멘 구루마',
+      latitude: 36.088689,
+      longitude: 129.390044,
+      friendName: '이찬민',
+      photoUrl: 'https://via.placeholder.com/150/FFEAA7/FFFFFF?text=구루마',
       timestamp: DateTime.now().subtract(const Duration(days: 3)),
+    ),
+    MapLocation(
+      id: '6',
+      name: '인브리즈',
+      latitude: 36.081709,
+      longitude: 129.395523,
+      friendName: '기노은',
+      photoUrl: 'https://via.placeholder.com/150/FF9FF3/FFFFFF?text=인브리즈',
+      timestamp: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+    MapLocation(
+      id: '7',
+      name: '쿠킹빌리지',
+      latitude: 36.082127,
+      longitude: 129.395925,
+      friendName: '권하민',
+      photoUrl: 'https://via.placeholder.com/150/FECA57/FFFFFF?text=쿠킹',
+      timestamp: DateTime.now().subtract(const Duration(hours: 6)),
+    ),
+    MapLocation(
+      id: '8',
+      name: '스프커리보울',
+      latitude: 36.081461,
+      longitude: 129.398412,
+      friendName: '정태주',
+      photoUrl: 'https://via.placeholder.com/150/54A0FF/FFFFFF?text=스프커리',
+      timestamp: DateTime.now().subtract(const Duration(hours: 8)),
+    ),
+    MapLocation(
+      id: '9',
+      name: '뜨돈',
+      latitude: 36.086331,
+      longitude: 129.403869,
+      friendName: '박예은',
+      photoUrl: 'https://via.placeholder.com/150/5F27CD/FFFFFF?text=뜨돈',
+      timestamp: DateTime.now().subtract(const Duration(days: 2)),
     ),
   ];
 
   @override
   void initState() {
     super.initState();
+    // 포항 지역 중심으로 초기 카메라 위치 설정
+    _initialCameraPosition = const CameraPosition(
+      target: LatLng(36.081489, 129.395523), // 포항 시내 중심 (베라보 제면소 근처)
+      zoom: 13.0,
+    );
     // 시작 시 현재 위치를 가져와 카메라를 이동
     _getCurrentLocation();
   }
@@ -147,7 +188,7 @@ class _MapScreenState extends State<MapScreen> {
         ),
       );
     } catch (e) {
-      print('현재 위치 가져오기 오류: $e');
+      debugPrint('현재 위치 가져오기 오류: $e');
       setState(() => _isLocationLoading = false);
     }
   }
@@ -210,111 +251,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// Apple Maps 스타일(커스텀) 데모 - 현재 미사용
-  Widget _buildAppleMapsStyle() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.blue, Colors.green],
-        ),
-      ),
-      child: Stack(
-        children: [
-          CustomPaint(painter: MapGridPainter(), size: Size.infinite),
-          if (_currentPosition != null)
-            Positioned(
-              left: MediaQuery.of(context).size.width / 2 - 15,
-              top: MediaQuery.of(context).size.height / 2 - 15,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.white, width: 3),
-                ),
-                child: const Icon(
-                  Icons.my_location,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-            ),
-          ..._buildAppleStyleMarkers(),
-          _buildCurrentLocationOverlay(),
-        ],
-      ),
-    );
-  }
-
-  /// Apple 스타일 마커(데모)
-  List<Widget> _buildAppleStyleMarkers() {
-    return _getFilteredLocations().map((location) {
-      double screenX =
-          (location.longitude + 180) / 360 * MediaQuery.of(context).size.width;
-      double screenY =
-          (90 - location.latitude) / 180 * MediaQuery.of(context).size.height;
-
-      return Positioned(
-        left: screenX - 25,
-        top: screenY - 25,
-        child: GestureDetector(
-          onTap: () => _showLocationDetails(location),
-          child: Column(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(color: Colors.white, width: 3),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Image.network(
-                    location.photoUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.photo, color: Colors.grey),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error, color: Colors.red),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  location.friendName[0],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }).toList();
-  }
-
   /// Google Maps 마커 생성
   Set<Marker> _buildMapMarkers() {
     return _getFilteredLocations().map((location) {
@@ -327,9 +263,34 @@ class _MapScreenState extends State<MapScreen> {
               '${location.friendName} • ${_formatTimestamp(location.timestamp)}',
         ),
         onTap: () => _showLocationDetails(location),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        // 커스텀 핀 아이콘 - 친구별로 다른 색상
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+          _getMarkerColor(location.friendName),
+        ),
+        // 커스텀 핀 설정
+        flat: false,
+        draggable: false,
+        anchor: const Offset(0.5, 1.0),
       );
     }).toSet();
+  }
+
+  /// 친구별 마커 색상 반환
+  double _getMarkerColor(String friendName) {
+    // 친구 이름을 기반으로 일관된 색상 반환
+    final colors = [
+      BitmapDescriptor.hueRed, // 빨강
+      BitmapDescriptor.hueBlue, // 파랑
+      BitmapDescriptor.hueGreen, // 초록
+      BitmapDescriptor.hueYellow, // 노랑
+      BitmapDescriptor.hueOrange, // 주황
+      BitmapDescriptor.hueViolet, // 보라
+      BitmapDescriptor.hueRose, // 분홍
+      BitmapDescriptor.hueAzure, // 하늘색
+    ];
+
+    final index = friendName.hashCode.abs() % colors.length;
+    return colors[index];
   }
 
   /// 사진 썸네일 오버레이 생성(데모 좌표 변환)

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:whatapp/mainpage/startscreenpage.dart';
-import 'package:whatapp/onboarding.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -10,6 +8,7 @@ import 'screens/main_page.dart';
 import 'screens/friends_manage_screen.dart';
 import 'screens/shopping_screen.dart';
 import 'screens/upload_screen.dart';
+import 'services/firebase_service.dart';
 
 /// 앱 진입 파일(main.dart)
 ///
@@ -92,6 +91,8 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
+        // Firebase 서비스 초기화
+        await FirebaseService.initialize();
       }
       await _checkOnboardingStatus();
     } catch (e) {
