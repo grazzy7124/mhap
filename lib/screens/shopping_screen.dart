@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ShoppingScreen extends StatefulWidget {
   const ShoppingScreen({super.key});
@@ -8,356 +10,283 @@ class ShoppingScreen extends StatefulWidget {
 }
 
 class _ShoppingScreenState extends State<ShoppingScreen> {
-  int _selectedCategoryIndex = 0;
-  final List<String> _categories = ['이모지', '프로필 이미지', '테마'];
+  int coin = 30;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final List<ShopItem> _emojiItems = [
-    ShopItem(
-      id: 'emoji_1',
-      name: '행복한 이모지',
-      description: '기분 좋은 하루를 표현하는 이모지',
-      price: 1000,
-      imageUrl: '😊',
-      isUnlocked: false,
-    ),
-    ShopItem(
-      id: 'emoji_2',
-      name: '여행 이모지',
-      description: '새로운 장소를 탐험하는 이모지',
-      price: 1500,
-      imageUrl: '✈️',
-      isUnlocked: false,
-    ),
-    ShopItem(
-      id: 'emoji_3',
-      name: '카페 이모지',
-      description: '맛있는 커피와 함께하는 이모지',
-      price: 1200,
-      imageUrl: '☕',
-      isUnlocked: false,
-    ),
-    ShopItem(
-      id: 'emoji_4',
-      name: '운동 이모지',
-      description: '활동적인 하루를 표현하는 이모지',
-      price: 1000,
-      imageUrl: '💪',
-      isUnlocked: false,
-    ),
+  // 로컬 이미지 에셋 리스트
+  final List<String> _imageAssets = [
+    'assets/images/item1.png',
+    'assets/images/item2.png',
+    'assets/images/item3.png',
+    'assets/images/item4.png',
+    'assets/images/item5.png',
+    'assets/images/item6.png',
+    'assets/images/item7.png',
+    'assets/images/item8.png',
   ];
 
-  final List<ShopItem> _profileItems = [
-    ShopItem(
-      id: 'profile_1',
-      name: '클래식 프로필',
-      description: '깔끔하고 세련된 프로필 이미지',
-      price: 2000,
-      imageUrl: '👤',
-      isUnlocked: false,
-    ),
-    ShopItem(
-      id: 'profile_2',
-      name: '아트 프로필',
-      description: '예술적인 느낌의 프로필 이미지',
-      price: 2500,
-      imageUrl: '🎨',
-      isUnlocked: false,
-    ),
-    ShopItem(
-      id: 'profile_3',
-      name: '네이처 프로필',
-      description: '자연을 테마로 한 프로필 이미지',
-      price: 1800,
-      imageUrl: '🌿',
-      isUnlocked: false,
-    ),
+  // 각 아이템의 가격 리스트 (개발자가 직접 수정 가능)
+  final List<int> _itemPrices = [
+    30,  // item1 가격
+    15,  // item2 가격
+    20,  // item3 가격
+    35,  // item4 가격
+    70,  // item5 가격
+    20,  // item6 가격
+    50,  // item7 가격
+    30,  // item8 가격
   ];
 
-  final List<ShopItem> _themeItems = [
-    ShopItem(
-      id: 'theme_1',
-      name: '다크 테마',
-      description: '어두운 배경의 세련된 테마',
-      price: 3000,
-      imageUrl: '🌙',
-      isUnlocked: false,
-    ),
-    ShopItem(
-      id: 'theme_2',
-      name: '컬러풀 테마',
-      description: '화려한 색상의 활기찬 테마',
-      price: 2800,
-      imageUrl: '🌈',
-      isUnlocked: false,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadUserCoin();
+  }
+
+  /// 사용자의 coin 정보를 Firebase에서 로드
+  Future<void> _loadUserCoin() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+          final data = doc.data();
+          if (data != null && data['coin'] != null) {
+            setState(() {
+              coin = data['coin'];
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Coin 로드 오류: $e');
+    }
+  }
+
+  /// 사용자의 coin Stream
+  Stream<int> _getUserCoinStream() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      return _firestore
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .map((doc) => doc.data()?['coin'] ?? 30);
+    }
+    return Stream.value(30);
+  }
+
+  /// 사용자의 coin을 업데이트
+  Future<void> _updateUserCoin(int newCoin) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'coin': newCoin,
+        });
+        // StreamBuilder가 자동으로 업데이트하므로 setState 불필요
+      }
+    } catch (e) {
+      print('Coin 업데이트 오류: $e');
+    }
+  }
+
+  /// 아이템 구매 처리
+  Future<void> _purchaseItem(int itemIndex) async {
+    final itemPrice = _itemPrices[itemIndex];
+    
+    if (coin >= itemPrice) {
+      final newCoin = coin - itemPrice;
+      await _updateUserCoin(newCoin);
+      
+      // 구매 성공 메시지
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('아이템을 구매했습니다! (${itemPrice}코인 차감)'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else {
+      // 코인 부족 메시지
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('코인이 부족합니다!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text(
-          '쇼핑',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_forward, color: Colors.black,),
-            onPressed: () {
-              Navigator.pushNamed(context, '/main'); // 👉 /main으로 이동
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.shopping_cart, color: Colors.black,),
-            onPressed: () {
-              // 장바구니 페이지로 이동
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 카테고리 탭
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: _categories.asMap().entries.map((entry) {
-                final index = entry.key;
-                final category = entry.value;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryIndex = index;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: _selectedCategoryIndex == index
-                                ? Colors.green
-                                : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        category,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: _selectedCategoryIndex == index
-                              ? Colors.green
-                              : Colors.grey,
-                          fontWeight: _selectedCategoryIndex == index
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
+        toolbarHeight: 100, // AppBar 높이를 늘려서 이미지가 잘리지 않도록 조정
+        leading: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: 19.05,),
+            GestureDetector(
+              child: Image.asset(
+                'assets/images/arrow_left.png',
+                width: 18.89, height: 17.44,
+              ),
+              onTap: () {
+                // PageView에서 지도 탭(인덱스 1)으로 이동
+                Navigator.pushReplacementNamed(
+                  context,
+                  '/main',
+                  arguments: {'initialTab': 1}, // 지도 탭 인덱스
                 );
-              }).toList(),
+              },
             ),
-          ),
-
-          // 상품 목록
-          Expanded(child: _buildProductList()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductList() {
-    List<ShopItem> items;
-    switch (_selectedCategoryIndex) {
-      case 0:
-        items = _emojiItems;
-        break;
-      case 1:
-        items = _profileItems;
-        break;
-      case 2:
-        items = _themeItems;
-        break;
-      default:
-        items = _emojiItems;
-    }
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.68,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        return _buildProductCard(items[index]);
-      },
-    );
-  }
-
-  Widget _buildProductCard(ShopItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // 상품 이미지
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  item.imageUrl,
-                  style: const TextStyle(fontSize: 48),
-                ),
-              ),
+          ],
+        ),
+        backgroundColor: Colors.black,
+        elevation: 0,
+        title: Column(
+          children: [
+            SizedBox(height: 20,),
+            Image.asset(
+              'assets/images/icon_shop.png'
             ),
-          ),
-
-          // 상품 정보
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
+            SizedBox(height: 16,),
+            Image.asset(
+              'assets/images/appbar_underline.png'
+            )
+          ],
+        ),
+        actions: [
+          StreamBuilder<int>(
+            stream: _getUserCoinStream(),
+            builder: (context, snapshot) {
+              final currentCoin = snapshot.data ?? coin;
+              return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  SizedBox(width: 5,),
+                  Image.asset(
+                    'assets/images/coin.png',
+                    width: 22, height: 18,
+                  ),
+                  SizedBox(width: 5,),
                   Text(
-                    item.name,
+                    '${currentCoin}',
                     style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.description,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // 2열 그리드
+            crossAxisSpacing: 16.0, // 가로 간격
+            mainAxisSpacing: 16.0, // 세로 간격
+            childAspectRatio: 1.0, // 정사각형 비율
+          ),
+          itemCount: _imageAssets.length,
+          itemBuilder: (context, index) {
+            return _buildImageItem(_imageAssets[index], index);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 이미지 아이템을 구성하는 메서드
+  Widget _buildImageItem(String imageAsset, int index) {
+    return GestureDetector(
+      onTap: () => _purchaseItem(index),
+      child: Container(
+        decoration: BoxDecoration(
+          // color: Colors.grey.shade900,
+          borderRadius: BorderRadius.circular(12.0),
+          border: Border.all(color: Colors.grey.shade800, width: 1.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Column(
+              children: [
+                // 이미지
+                Expanded(
+                  child: Image.asset(
+                    imageAsset,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey.shade800,
+                        child: const Center(
+                          child: Icon(Icons.error, color: Colors.red, size: 40.0),
+                        ),
+                      );
+                    },
                   ),
-                  // const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+                SizedBox(height: 18),
+                // 하단 컨테이너 - width 63, height 27
+                Container(
+                  width: 63,
+                  height: 27,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(35.0),
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        '${item.price}원',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
+                      SizedBox(width: 5,),
+                      Image.asset(
+                        'assets/images/coin.png',
+                        width: 22, height: 18,
                       ),
-                      ElevatedButton(
-                        onPressed: item.isUnlocked
-                            ? null
-                            : () {
-                                _purchaseItem(item);
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: item.isUnlocked
-                              ? Colors.grey
-                              : Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                      SizedBox(width: 5,),
+                      ShaderMask(
+                        shaderCallback: (Rect bounds) {
+                          return const LinearGradient(
+                            colors: [
+                              Color(0xFFFF6B6B),  // 빨간색 계열
+                              Color(0xFFFF8E53),  // 주황색 계열
+                              Color(0xFFFFD93D),  // 노란색 계열
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds);
+                        },
                         child: Text(
-                          item.isUnlocked ? '보유' : '구매',
-                          style: const TextStyle(fontSize: 12),
+                          '${_itemPrices[index]}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white, // ShaderMask를 사용할 때는 흰색으로 설정
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
-
-  void _purchaseItem(ShopItem item) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('구매 확인'),
-        content: Text('${item.name}을(를) ${item.price}원에 구매하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                item.isUnlocked = true;
-              });
-              Navigator.pop(context);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${item.name} 구매 완료!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('구매'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ShopItem {
-  final String id;
-  final String name;
-  final String description;
-  final int price;
-  final String imageUrl;
-  bool isUnlocked;
-
-  ShopItem({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.imageUrl,
-    this.isUnlocked = false,
-  });
 }

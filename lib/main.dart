@@ -7,6 +7,7 @@ import 'screens/main_page.dart';
 import 'screens/friends_manage_screen.dart';
 import 'screens/shopping_screen.dart';
 import 'screens/upload_screen.dart';
+import 'screens/review_form_screen.dart';
 import 'services/firebase_service.dart';
 
 /// 앱 진입 파일(main.dart)
@@ -57,6 +58,14 @@ class MyApp extends StatelessWidget {
         '/friends': (context) => const FriendsManageScreen(),
         '/shopping': (context) => const ShoppingScreen(),
         '/upload': (context) => const UploadScreen(),
+        '/review': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          String? imagePath;
+          if (args is Map && args['imagePath'] is String) {
+            imagePath = args['imagePath'] as String;
+          }
+          return ReviewFormScreen(initialImagePath: imagePath);
+        },
       },
     );
   }
@@ -95,6 +104,7 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
       }
       await _checkOnboardingStatus();
     } catch (e) {
+      debugPrint('앱 초기화 오류: $e');
       // 초기화 실패 시 온보딩으로 폴백
       if (mounted) {
         _navigateToOnboarding();
@@ -104,19 +114,37 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
 
   /// 온보딩 완료 여부 확인 후 분기 이동
   Future<void> _checkOnboardingStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
-    if (!mounted) return;
-    if (onboardingCompleted) {
-      _navigateToMainPage();
-    } else {
-      _navigateToOnboarding();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final onboardingCompleted =
+          prefs.getBool('onboarding_completed') ?? false;
+      if (!mounted) return;
+
+      // 3초 후에도 확인이 안 되면 강제로 온보딩으로 이동
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+
+      if (onboardingCompleted) {
+        _navigateToMainPage();
+      } else {
+        _navigateToOnboarding();
+      }
+    } catch (e) {
+      debugPrint('온보딩 상태 확인 오류: $e');
+      // 오류 시 온보딩으로 이동
+      if (mounted) {
+        _navigateToOnboarding();
+      }
     }
   }
 
   /// 메인 페이지로 이동
   void _navigateToMainPage() {
-    Navigator.pushReplacementNamed(context, '/main');
+    Navigator.pushReplacementNamed(
+      context,
+      '/main',
+      arguments: {'initialTab': 1}, // 1 = 지도 탭 (0: 카메라, 1: 지도, 2: 쇼핑)
+    );
   }
 
   /// 온보딩으로 이동
@@ -132,7 +160,7 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.location_on, size: 80, color: Colors.white),
             SizedBox(height: 24),
             Text(
@@ -151,6 +179,29 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
             Text(
               '앱을 초기화하는 중...',
               style: TextStyle(fontSize: 16, color: Colors.white70),
+            ),
+            SizedBox(height: 32),
+            // 수동 이동 버튼들
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: _navigateToOnboarding,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.green,
+                  ),
+                  child: Text('온보딩으로 이동'),
+                ),
+                ElevatedButton(
+                  onPressed: _navigateToMainPage,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.green,
+                  ),
+                  child: Text('메인으로 이동'),
+                ),
+              ],
             ),
           ],
         ),

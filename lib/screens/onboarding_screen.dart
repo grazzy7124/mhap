@@ -45,7 +45,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_completed', true);
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/main');
+    Navigator.pushReplacementNamed(
+      context,
+      '/main',
+      arguments: {'initialTab': 1}, // 1 = 지도 탭 (0: 카메라, 1: 지도, 2: 쇼핑)
+    );
   }
 
   Future<void> _handleGoogleSignIn() async {
