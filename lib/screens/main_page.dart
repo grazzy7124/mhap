@@ -19,10 +19,27 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   /// 현재 선택된 탭 인덱스
-  int _currentIndex = 1; // 기본 카메라 탭으로 시작 예시
+  int _currentIndex = 0; // 기본 카메라 탭으로 시작
 
   /// 페이지 컨트롤러 (탭과 동기화)
-  final PageController _pageController = PageController(initialPage: 1);
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    // 라우트 파라미터에서 초기 탭 인덱스 확인
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args != null && args is Map<String, dynamic>) {
+        final initialTab = args['initialTab'] as int?;
+        if (initialTab != null && initialTab >= 0 && initialTab < 3) {
+          setState(() => _currentIndex = initialTab);
+          _pageController.jumpToPage(initialTab);
+        }
+      }
+    });
+    _pageController = PageController(initialPage: 0);
+  }
 
   @override
   void dispose() {
@@ -32,6 +49,12 @@ class _MainPageState extends State<MainPage> {
 
   /// 하단 탭 선택 시 페이지 이동
   void _onTabSelected(int index) {
+    setState(() => _currentIndex = index);
+    _pageController.jumpToPage(index);
+  }
+
+  /// 특정 탭으로 이동하는 메서드
+  void goToTab(int index) {
     setState(() => _currentIndex = index);
     _pageController.jumpToPage(index);
   }
@@ -48,35 +71,35 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Whatapp'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'logout') _logout();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'logout', child: Text('로그아웃')),
-            ],
-          ),
-        ],
-      ),
+      // appBar: AppBar(
+      //   title: const Text('Whatapp'),
+      //   actions: [
+      //     PopupMenuButton<String>(
+      //       onSelected: (value) {
+      //         if (value == 'logout') _logout();
+      //       },
+      //       itemBuilder: (context) => const [
+      //         PopupMenuItem(value: 'logout', child: Text('로그아웃')),
+      //       ],
+      //     ),
+      //   ],
+      // ),
       body: PageView(
         controller: _pageController,
         onPageChanged: (idx) => setState(() => _currentIndex = idx),
         children: const [
-          ShoppingScreen(),
           CameraScreen(),
           MapScreen(),
+          ShoppingScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabSelected,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.store), label: '쇼핑'),
           BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: '카메라'),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: '지도'),
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: '쇼핑'),
         ],
       ),
     );
