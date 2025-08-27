@@ -434,7 +434,12 @@ class _CameraScreenState extends State<CameraScreen> {
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: _isLoading ? null : _takePhoto,
-                                child: CameraPreview(_cameraController!),
+                                child: Center(
+                                  child: AspectRatio(
+                                    aspectRatio: 4 / 3,
+                                    child: CameraPreview(_cameraController!),
+                                  ),
+                                ),
                               );
                             } else {
                               return const Center(

@@ -41,7 +41,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
           children: [
             // 1) 상단 이미지 미리보기
             AspectRatio(
-              aspectRatio: 16 / 9,
+              aspectRatio: 4 / 3,
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
