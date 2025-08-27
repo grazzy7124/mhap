@@ -635,7 +635,23 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        
+        leading: IconButton(
+          icon: const Icon(Icons.camera_alt, color: Colors.black), // 카메라 아이콘
+          onPressed: () {
+            // PageView에서 카메라 탭(인덱스 0)으로 이동
+            Navigator.pushReplacementNamed(context, '/main');
+          },
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart, color: Colors.black,),
+            onPressed: () {
+              // 장바구니 페이지로 이동
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
