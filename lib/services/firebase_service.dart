@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 // google_sign_in 패키지 없이 Firebase Auth의 OAuth Provider 사용
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:flutter/foundation.dart';
 
 /// FirebaseService: Firebase 초기화 + 인증 전용
 /// - initialize()
@@ -25,6 +26,14 @@ class FirebaseService {
 
   static Future<void> initialize({FirebaseOptions? options}) async {
     await Firebase.initializeApp(options: options);
+    // Web 환경에서 리다이렉트 세션 저장 문제 방지: LOCAL 지속성 사용
+    if (kIsWeb) {
+      try {
+        await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+      } catch (_) {
+        // ignore persistence errors on non-web
+      }
+    }
   }
 
   static Stream<User?> get authStateChanges => auth.authStateChanges();
@@ -43,7 +52,10 @@ class FirebaseService {
       'prompt': 'select_account',
     });
 
-    final userCred = await auth.signInWithProvider(googleProvider);
+    // Web에서는 리다이렉트 대신 팝업 사용하여 sessionStorage 문제 회피
+    final UserCredential userCred = kIsWeb
+        ? await auth.signInWithPopup(googleProvider)
+        : await auth.signInWithProvider(googleProvider);
     await ensureUserProfile(userCred.user);
     return userCred;
   }

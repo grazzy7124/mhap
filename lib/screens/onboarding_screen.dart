@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main_page.dart';
+import '../services/firebase_service.dart';
 
 /// 온보딩 화면
 ///
@@ -23,6 +23,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   /// 로그인(true)/회원가입(false) 모드 전환 플래그
   bool _isLoginMode = true;
 
+  /// 소셜 로그인 처리 중 로딩 플래그
+  bool _isLoading = false;
+
   /// 폼 상태 및 텍스트 컨트롤러들 (예: 이메일/비밀번호)
   /// 실제 인증 연동 시 입력값을 사용합니다.
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -36,18 +39,57 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  /// 폼 제출 핸들러
-  ///
-  /// - 폼 유효성 검사
-  /// - (추후) Firebase Auth 연동하여 로그인/회원가입 수행
-  /// - 성공 시 온보딩 완료로 표시하고 메인 페이지로 이동
-  void _submit() {
-    final isValid = _formKey.currentState?.validate() ?? false;
-    if (!isValid) return;
+  /// (이메일/비번 폼 제출은 현재 미사용)
 
-    // TODO: Firebase Auth 연동 (로그인/회원가입)
-    // 성공 가정 후 메인으로 이동
+  Future<void> _afterLoginSuccess() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_completed', true);
+    if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/main');
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      await FirebaseService.signInWithGoogle();
+      await _afterLoginSuccess();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('구글 로그인 실패: ' + e.toString())),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      await FirebaseService.signInWithApple();
+      await _afterLoginSuccess();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('애플 로그인 실패: ' + e.toString())),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   /// 모드 전환(로그인<->회원가입)
@@ -88,9 +130,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Column(
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        
-                      },
+                      onTap: _isLoading ? null : _handleGoogleSignIn,
                       child: Container(
                         width: 278, height: 40,
                         decoration: BoxDecoration(
@@ -105,16 +145,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               width: 27,
                             ),
                             SizedBox(width: 46,),
-                            Text('구글 계정으로 로그인')
+                            Text(_isLoading ? '처리 중...' : '구글 계정으로 로그인')
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     GestureDetector(
-                      onTap: () {
-                        
-                      },
+                      onTap: _isLoading ? null : _handleAppleSignIn,
                       child: Container(
                         width: 278, height: 40,
                         decoration: BoxDecoration(
@@ -129,11 +167,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               width: 23, height: 29,
                             ),
                             SizedBox(width: 46,),
-                            Text('애플 계정으로 로그인')
+                            Text(_isLoading ? '처리 중...' : '애플 계정으로 로그인')
                           ],
                         ),
                       ),
                     ),
+                    if (_isLoading) ...[
+                      const SizedBox(height: 16),
+                      const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ],
                   ],
                 ),
               ),

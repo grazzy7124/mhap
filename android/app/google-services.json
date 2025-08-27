@@ -9,10 +9,23 @@
       "client_info": {
         "mobilesdk_app_id": "1:1038389858842:android:8ae40aa3ca446e93b977a3",
         "android_client_info": {
-          "package_name": "com.example.whatapp"
+          "package_name": "com.whatapp.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1038389858842-dud9vldo174m4opogastoh04m7o5d587.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.whatapp.app",
+            "certificate_hash": "7fc7eb0742e1f5342b91b96e1b0537c814f760f0"
+          }
+        },
+        {
+          "client_id": "1038389858842-hfbhsheq34cj6lfei9tqhj770878clmn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC9P9jOPK-JwkueDELVDqK8SUP_I8TpmpY"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1038389858842-3vtun3pms7gohnqamtb6uvp3d13ecn06.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1038389858842-fao3nue9kkrtiismvo70sr950a1p9t49.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.whatapp"
+              }
+            }
+          ]
         }
       }
     }
