@@ -4,6 +4,9 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'dart:math';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
 
 /// 지도 화면(MapScreen)
 ///
@@ -26,6 +29,10 @@ class _MapScreenState extends State<MapScreen> {
   // 현재 위치 관련 상태
   Position? _currentPosition; // 현재 GPS 위치
   bool _isLocationLoading = false; // 위치 로딩 상태
+
+  // 커스텀 마커 이미지들
+  Map<String, BitmapDescriptor> _customMarkers = {};
+  Map<String, GlobalKey> _markerKeys = {}; // 마커 위젯의 키를 저장할 맵
 
   // 지도 설정: 초기 카메라 위치(서울)
   CameraPosition _initialCameraPosition = const CameraPosition(
@@ -130,8 +137,130 @@ class _MapScreenState extends State<MapScreen> {
       target: LatLng(36.081489, 129.395523), // 포항 시내 중심 (베라보 제면소 근처)
       zoom: 13.0,
     );
+    // 마커 키들 초기화
+    _initializeMarkerKeys();
     // 시작 시 현재 위치를 가져와 카메라를 이동
     _getCurrentLocation();
+  }
+
+  /// 마커 키들 초기화
+  void _initializeMarkerKeys() {
+    final friends = ['기노은', '권하민', '정태주', '박예은', '이찬민', '김철수', '이영희', '박민수'];
+    for (final friend in friends) {
+      _markerKeys[friend] = GlobalKey();
+    }
+
+    // 빌드 완료 후 마커 이미지 생성
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _generateMarkerBitmaps();
+    });
+  }
+
+  /// 마커 위젯을 비트맵으로 변환하여 저장
+  Future<void> _generateMarkerBitmaps() async {
+    try {
+      for (final entry in _markerKeys.entries) {
+        final friendName = entry.key;
+        final key = entry.value;
+
+        // 위젯이 렌더링될 때까지 잠시 대기
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // 위젯을 비트맵으로 변환
+        final bitmap = await _widgetToBitmap(key);
+        if (bitmap != null) {
+          _customMarkers[friendName] = bitmap;
+        }
+      }
+
+      // 마커 업데이트
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('마커 비트맵 생성 오류: $e');
+    }
+  }
+
+  /// 위젯을 비트맵 이미지로 변환
+  Future<BitmapDescriptor?> _widgetToBitmap(GlobalKey key) async {
+    try {
+      final RenderRepaintBoundary? boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      if (byteData == null) return null;
+
+      return BitmapDescriptor.fromBytes(byteData.buffer.asUint8List());
+    } catch (e) {
+      debugPrint('위젯을 비트맵으로 변환 오류: $e');
+      return null;
+    }
+  }
+
+  /// 마커 위젯 생성 (RepaintBoundary로 감싸서 비트맵 변환 가능하게)
+  Widget _buildMarkerWidget(String friendName, GlobalKey key) {
+    return RepaintBoundary(
+      key: key,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: _hueToColor(_getMarkerColor(friendName)), // 친구별 마커 색상과 동일한 배경색
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white, // 테두리는 흰색으로 변경하여 대비 효과
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: Padding(
+            padding: const EdgeInsets.all(6.0), // 이미지 주변에 여백 추가
+            child: Image.asset(
+              _getFriendIconAsset(friendName),
+              width: 32, // 42에서 32로 줄여서 여백 생성
+              height: 32, // 42에서 32로 줄여서 여백 생성
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 친구별 아이콘 에셋 경로 반환
+  String _getFriendIconAsset(String friendName) {
+    switch (friendName) {
+      case '기노은':
+        return 'assets/images/item1.png';
+      case '권하민':
+        return 'assets/images/item2.png';
+      case '정태주':
+        return 'assets/images/item3.png';
+      case '박예은':
+        return 'assets/images/item4.png';
+      case '이찬민':
+        return 'assets/images/item5.png';
+      case '김철수':
+        return 'assets/images/item6.png';
+      case '이영희':
+        return 'assets/images/item7.png';
+      case '박민수':
+        return 'assets/images/item8.png';
+      default:
+        return 'assets/images/item1.png';
+    }
   }
 
   @override
@@ -222,7 +351,7 @@ class _MapScreenState extends State<MapScreen> {
     return _buildGoogleMaps();
   }
 
-  /// Google Maps + 오버레이(사진/현재 위치) 구성
+  /// Google Maps + 오버레이(현재 위치) 구성
   Widget _buildGoogleMaps() {
     return Stack(
       children: [
@@ -243,15 +372,13 @@ class _MapScreenState extends State<MapScreen> {
             ),
           },
         ),
-        // 사진 썸네일 오버레이
-        ..._buildPhotoOverlays(),
         // 현재 위치 상태 오버레이
         _buildCurrentLocationOverlay(),
       ],
     );
   }
 
-  /// Google Maps 마커 생성
+  /// Google Maps 마커 생성 (친구별 커스텀 이미지 마커)
   Set<Marker> _buildMapMarkers() {
     return _getFilteredLocations().map((location) {
       return Marker(
@@ -263,90 +390,67 @@ class _MapScreenState extends State<MapScreen> {
               '${location.friendName} • ${_formatTimestamp(location.timestamp)}',
         ),
         onTap: () => _showLocationDetails(location),
-        // 커스텀 핀 아이콘 - 친구별로 다른 색상
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          _getMarkerColor(location.friendName),
-        ),
-        // 커스텀 핀 설정
+        // 커스텀 마커가 있으면 사용, 없으면 기본 마커
+        icon:
+            _customMarkers[location.friendName] ??
+            BitmapDescriptor.defaultMarkerWithHue(
+              _getMarkerColor(location.friendName),
+            ),
+        // 마커 설정
         flat: false,
         draggable: false,
-        anchor: const Offset(0.5, 1.0),
+        anchor: const Offset(0.5, 1.0), // 마커 하단 중앙에 위치
+        zIndex: 1.0, // 마커 레이어 순서
       );
     }).toSet();
   }
 
-  /// 친구별 마커 색상 반환
-  double _getMarkerColor(String friendName) {
-    // 친구 이름을 기반으로 일관된 색상 반환
-    final colors = [
-      BitmapDescriptor.hueRed, // 빨강
-      BitmapDescriptor.hueBlue, // 파랑
-      BitmapDescriptor.hueGreen, // 초록
-      BitmapDescriptor.hueYellow, // 노랑
-      BitmapDescriptor.hueOrange, // 주황
-      BitmapDescriptor.hueViolet, // 보라
-      BitmapDescriptor.hueRose, // 분홍
-      BitmapDescriptor.hueAzure, // 하늘색
-    ];
-
-    final index = friendName.hashCode.abs() % colors.length;
-    return colors[index];
+  /// Hue 값을 Color로 변환하는 헬퍼 메서드
+  Color _hueToColor(double hue) {
+    switch (hue.toInt()) {
+      case 0: // BitmapDescriptor.hueRed
+        return Colors.red;
+      case 120: // BitmapDescriptor.hueGreen
+        return Colors.green;
+      case 240: // BitmapDescriptor.hueBlue
+        return Colors.blue;
+      case 60: // BitmapDescriptor.hueYellow
+        return Colors.yellow;
+      case 30: // BitmapDescriptor.hueOrange
+        return Colors.orange;
+      case 280: // BitmapDescriptor.hueViolet
+        return Colors.purple;
+      case 300: // BitmapDescriptor.hueRose
+        return Colors.pink;
+      case 210: // BitmapDescriptor.hueAzure
+        return Colors.lightBlue;
+      default:
+        return Colors.red;
+    }
   }
 
-  /// 사진 썸네일 오버레이 생성(데모 좌표 변환)
-  List<Widget> _buildPhotoOverlays() {
-    return _getFilteredLocations().map((location) {
-      double screenX =
-          (location.longitude + 180) / 360 * MediaQuery.of(context).size.width;
-      double screenY =
-          (90 - location.latitude) / 180 * MediaQuery.of(context).size.height;
-
-      return Positioned(
-        left: screenX - 25,
-        top: screenY - 60,
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () => _showLocationDetails(location),
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Image.network(
-                location.photoUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.error, color: Colors.red),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-    }).toList();
+  /// 친구별 마커 색상 반환
+  double _getMarkerColor(String friendName) {
+    switch (friendName) {
+      case '기노은':
+        return BitmapDescriptor.hueRed; // 빨간색
+      case '권하민':
+        return BitmapDescriptor.hueBlue; // 파란색
+      case '정태주':
+        return BitmapDescriptor.hueGreen; // 초록색
+      case '박예은':
+        return BitmapDescriptor.hueYellow; // 노란색
+      case '이찬민':
+        return BitmapDescriptor.hueOrange; // 주황색
+      case '김철수':
+        return BitmapDescriptor.hueViolet; // 보라색
+      case '이영희':
+        return BitmapDescriptor.hueRose; // 분홍색
+      case '박민수':
+        return BitmapDescriptor.hueAzure; // 하늘색
+      default:
+        return BitmapDescriptor.hueRed; // 기본값
+    }
   }
 
   /// 우측 상단 현재 위치 상태 오버레이
@@ -631,6 +735,45 @@ class _MapScreenState extends State<MapScreen> {
     return '방금 전';
   }
 
+  /// 마커 위젯들을 비트맵으로 변환하여 저장 (RepaintBoundary 사용)
+  Future<void> _generateHiddenMarkerBitmaps() async {
+    try {
+      for (final entry in _markerKeys.entries) {
+        final friendName = entry.key;
+        final key = entry.value;
+
+        // 위젯이 렌더링될 때까지 잠시 대기
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // 위젯을 비트맵으로 변환
+        final bitmap = await _widgetToBitmap(key);
+        if (bitmap != null) {
+          _customMarkers[friendName] = bitmap;
+        }
+      }
+
+      // 마커 업데이트
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('마커 비트맵 생성 오류: $e');
+    }
+  }
+
+  /// 마커 위젯들을 생성 (RepaintBoundary로 감싸서 비트맵 변환 가능하게)
+  List<Widget> _buildHiddenMarkerWidgets() {
+    return _markerKeys.entries.map((entry) {
+      final friendName = entry.key;
+      final key = entry.value;
+      return Positioned(
+        left: -1000, // 화면 밖에 위치시켜 숨김
+        top: -1000,
+        child: _buildMarkerWidget(friendName, key),
+      );
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -646,7 +789,7 @@ class _MapScreenState extends State<MapScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.shopping_cart, color: Colors.black,),
+            icon: const Icon(Icons.shopping_cart, color: Colors.black),
             onPressed: () {
               // 장바구니 페이지로 이동
             },
@@ -714,6 +857,8 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
           ),
+          // 마커 위젯들 (비트맵 변환을 위해 숨김 처리)
+          ..._buildHiddenMarkerWidgets(),
           // 우측 하단 컨트롤 버튼들
           Positioned(
             bottom: 100,
@@ -770,6 +915,31 @@ class MapLocation {
     required this.photoUrl,
     required this.timestamp,
   });
+}
+
+/// 핀 꼬리 그리드 페인터(삼각형 모양)
+class PinTailPainter extends CustomPainter {
+  final Color color;
+
+  PinTailPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(size.width / 2, 0);
+    path.lineTo(0, size.height);
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Apple Maps 스타일 그리드 페인터(데모)

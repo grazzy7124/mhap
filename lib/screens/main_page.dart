@@ -38,7 +38,7 @@ class _MainPageState extends State<MainPage> {
         }
       }
     });
-    _pageController = PageController(initialPage: 0);
+    _pageController = PageController(initialPage: 1); // 0: 카메라 → 1: 지도로 변경
   }
 
   @override
@@ -87,11 +87,7 @@ class _MainPageState extends State<MainPage> {
       body: PageView(
         controller: _pageController,
         onPageChanged: (idx) => setState(() => _currentIndex = idx),
-        children: const [
-          CameraScreen(),
-          MapScreen(),
-          ShoppingScreen(),
-        ],
+        children: const [CameraScreen(), MapScreen(), ShoppingScreen()],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -120,7 +116,8 @@ class PhotosTab extends StatefulWidget {
   State<PhotosTab> createState() => _PhotosTabState();
 }
 
-class _PhotosTabState extends State<PhotosTab> with SingleTickerProviderStateMixin {
+class _PhotosTabState extends State<PhotosTab>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController; // 탭 컨트롤러
 
   @override
@@ -206,18 +203,11 @@ class _PhotosTabState extends State<PhotosTab> with SingleTickerProviderStateMix
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.photo,
-                      size: 40,
-                      color: Colors.grey[600],
-                    ),
+                    Icon(Icons.photo, size: 40, color: Colors.grey[600]),
                     const SizedBox(height: 8),
                     Text(
                       '내 사진 ${index + 1}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
                 ),
@@ -302,13 +292,10 @@ class _PhotosTabState extends State<PhotosTab> with SingleTickerProviderStateMix
                         mainAxisSize: MainAxisSize.min, // 오버플로우 방지
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.photo,
-                            size: 24,
-                            color: Colors.grey[600],
-                          ),
+                          Icon(Icons.photo, size: 24, color: Colors.grey[600]),
                           const SizedBox(height: 4),
-                          Flexible( // 텍스트 오버플로우 방지
+                          Flexible(
+                            // 텍스트 오버플로우 방지
                             child: Text(
                               '${friendName[0]}${index + 1}',
                               style: TextStyle(
