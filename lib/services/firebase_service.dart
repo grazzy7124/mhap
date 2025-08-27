@@ -1,13 +1,11 @@
 // lib/services/firebase_service.dart
-import 'dart:convert';
-import 'dart:math';
+import 'dart:io' show Platform;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 // google_sign_in 패키지 없이 Firebase Auth의 OAuth Provider 사용
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
 import 'package:flutter/foundation.dart';
 
 /// FirebaseService: Firebase 초기화 + 인증 전용
@@ -46,55 +44,39 @@ class FirebaseService {
   // Google Login
   // ----------------------------
   static Future<UserCredential> signInWithGoogle() async {
-    // Firebase Auth의 GoogleAuthProvider로 직접 로그인
-    final googleProvider = GoogleAuthProvider();
-    googleProvider.setCustomParameters({
-      'prompt': 'select_account',
-    });
+    try {
+      // Firebase Auth의 GoogleAuthProvider로 직접 로그인
+      final googleProvider = GoogleAuthProvider();
+      googleProvider.setCustomParameters({'prompt': 'select_account'});
 
-    // Web에서는 리다이렉트 대신 팝업 사용하여 sessionStorage 문제 회피
-    final UserCredential userCred = kIsWeb
-        ? await auth.signInWithPopup(googleProvider)
-        : await auth.signInWithProvider(googleProvider);
-    await ensureUserProfile(userCred.user);
-    return userCred;
-  }
-
-  // ----------------------------
-  // Apple Login (iOS/macOS)
-  // ----------------------------
-  static Future<UserCredential> signInWithApple() async {
-    final rawNonce = _generateNonce();
-    final nonce = _sha256ofString(rawNonce);
-
-    final appleCred = await SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
-      nonce: nonce,
-    );
-
-    final oauthCred = OAuthProvider('apple.com').credential(
-      idToken: appleCred.identityToken,
-      rawNonce: rawNonce,
-    );
-
-    final userCred = await auth.signInWithCredential(oauthCred);
-
-    final user = userCred.user;
-    // 최초 로그인 시 표시명 비어있으면 보완
-    if (user != null && (user.displayName == null || user.displayName!.isEmpty)) {
-      final fn = appleCred.givenName ?? '';
-      final ln = appleCred.familyName ?? '';
-      final name = (fn + ' ' + ln).trim();
-      if (name.isNotEmpty) {
-        await user.updateDisplayName(name);
+      // iOS 전용 설정
+      if (Platform.isIOS) {
+        googleProvider.setCustomParameters({
+          'prompt': 'select_account',
+          'ios_client_id':
+              '1038389858842-fao3nue9kkrtiismvo70sr950a1p9t49.apps.googleusercontent.com',
+        });
       }
-    }
 
-    await ensureUserProfile(userCred.user);
-    return userCred;
+      // Web에서는 리다이렉트 대신 팝업 사용하여 sessionStorage 문제 회피
+      final UserCredential userCred = kIsWeb
+          ? await auth.signInWithPopup(googleProvider)
+          : await auth.signInWithProvider(googleProvider);
+      await ensureUserProfile(userCred.user);
+      return userCred;
+    } catch (e) {
+      // iOS에서 Google 로그인 실패 시 더 자세한 오류 정보 제공
+      if (Platform.isIOS) {
+        if (e.toString().contains('network')) {
+          throw Exception('네트워크 연결을 확인해주세요.');
+        } else if (e.toString().contains('cancelled')) {
+          throw Exception('로그인이 취소되었습니다.');
+        } else if (e.toString().contains('popup')) {
+          throw Exception('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
+        }
+      }
+      throw Exception('Google 로그인 오류: $e');
+    }
   }
 
   // ----------------------------
@@ -125,19 +107,5 @@ class FirebaseService {
     }
   }
 
-  // ----------------------------
-  // Apple nonce helpers
-  // ----------------------------
-  static String _generateNonce([int length = 32]) {
-    const chars =
-        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-    final rand = Random.secure();
-    return List.generate(length, (_) => chars[rand.nextInt(chars.length)]).join();
-  }
 
-  static String _sha256ofString(String input) {
-    final bytes = utf8.encode(input);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
 }
