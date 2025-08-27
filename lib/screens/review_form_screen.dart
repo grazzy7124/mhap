@@ -201,18 +201,17 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                 children: [
                   // 2) 주소 표시 (카메라에서 전달받은 주소)
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    width: 290, height: 45,
+                    padding: const EdgeInsets.only(left: 15, right: 15),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      color: Color(0xffD9D9D9),
+                      borderRadius: BorderRadius.circular(22.5),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.location_on,
-                          color: Colors.blue,
-                          size: 20,
+                        Image.asset(
+                          'assets/images/map_icon.png',
+                          width: 21,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -242,6 +241,9 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                     controller: _placeNameController,
                     decoration: InputDecoration(
                       hintText: '나만의 장소 이름을 입력하세요!',
+                      hintStyle: TextStyle(
+                        color: Color(0xffBBBBBB)
+                      ),
                       border: OutlineInputBorder(
                         borderSide: BorderSide.none,
                       ),
@@ -277,6 +279,9 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                     maxLines: 8,
                     decoration: InputDecoration(
                       hintText: '내용 입력',
+                      hintStyle: TextStyle(
+                        color: Color(0xffD2D2D2)
+                      ),
                       border: OutlineInputBorder(
                         borderSide: BorderSide.none,
                         borderRadius: BorderRadius.circular(8),
