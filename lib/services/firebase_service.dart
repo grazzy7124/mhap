@@ -77,7 +77,7 @@ class FirebaseService {
   }
 
   // ----------------------------
-  // users/{uid} 프로필 생성/업데이트
+  // users/{uid} 프로필 생성/갱신
   // ----------------------------
   static Future<void> ensureUserProfile(User? user) async {
     if (user == null) return;
@@ -87,20 +87,30 @@ class FirebaseService {
 
     final now = FieldValue.serverTimestamp();
     final data = <String, dynamic>{
-      'displayName': user.displayName ?? '',
-      'photoURL': user.photoURL,
       'updatedAt': now,
     };
 
+    // displayName과 photoURL은 값이 있을 때만 업데이트
+    if (user.displayName != null && user.displayName!.isNotEmpty) {
+      data['displayName'] = user.displayName;
+    }
+    if (user.photoURL != null) {
+      data['photoURL'] = user.photoURL;
+    }
+
     if (snap.exists) {
+      // 기존 문서가 있는 경우: merge 옵션으로 업데이트
       await ref.set(data, SetOptions(merge: true));
     } else {
+      // 새 문서 생성: 기본값과 함께 생성
       await ref.set({
-        ...data,
+        'displayName': user.displayName ?? '사용자',
+        'photoURL': user.photoURL,
         'friendCount': 0,
         'incomingRequestCount': 0,
         'createdAt': now,
-      }, SetOptions(merge: true));
+        'updatedAt': now,
+      });
     }
   }
 }
