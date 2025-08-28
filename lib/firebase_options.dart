@@ -44,40 +44,40 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'your-web-api-key',
-    appId: 'your-web-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    authDomain: 'your-project-id.firebaseapp.com',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyDCfTElvzLr05zo5N7O1vJilqrZTkzuVWc',
+    appId: '1:1038389858842:web:your-web-app-id',
+    messagingSenderId: '1038389858842',
+    projectId: 'whatapp-4a56b',
+    authDomain: 'whatapp-4a56b.firebaseapp.com',
+    storageBucket: 'whatapp-4a56b.firebasestorage.app',
     measurementId: 'your-measurement-id',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'your-android-api-key',
-    appId: 'your-android-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyDCfTElvzLr05zo5N7O1vJilqrZTkzuVWc',
+    appId: '1:1038389858842:android:dud9vldo174m4opogastoh04m7o5d587',
+    messagingSenderId: '1038389858842',
+    projectId: 'whatapp-4a56b',
+    storageBucket: 'whatapp-4a56b.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'your-ios-api-key',
-    appId: 'your-ios-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
-    iosClientId: 'your-ios-client-id',
-    iosBundleId: 'com.example.whatapp',
+    apiKey: 'AIzaSyDCfTElvzLr05zo5N7O1vJilqrZTkzuVWc',
+    appId: '1:1038389858842:ios:52672242fcc9eeebb977a3',
+    messagingSenderId: '1038389858842',
+    projectId: 'whatapp-4a56b',
+    storageBucket: 'whatapp-4a56b.firebasestorage.app',
+    iosClientId: '1038389858842-sd09a2klg5if853nnbvnpel6v5ldd2vc',
+    iosBundleId: 'com.jeoungtaeju.whatapp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'your-macos-api-key',
-    appId: 'your-macos-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
-    iosClientId: 'your-macos-client-id',
-    iosBundleId: 'com.example.whatapp',
+    apiKey: 'AIzaSyDCfTElvzLr05zo5N7O1vJilqrZTkzuVWc',
+    appId: '1:1038389858842:ios:52672242fcc9eeebb977a3',
+    messagingSenderId: '1038389858842',
+    projectId: 'whatapp-4a56b',
+    storageBucket: 'whatapp-4a56b.firebasestorage.app',
+    iosClientId: '1038389858842-sd09a2klg5if853nnbvnpel6v5ldd2vc',
+    iosBundleId: 'com.jeoungtaeju.whatapp',
   );
 }
