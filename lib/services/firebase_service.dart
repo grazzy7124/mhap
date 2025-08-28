@@ -23,6 +23,12 @@ class FirebaseService {
   static FirebaseAuth get auth => _auth ??= FirebaseAuth.instance;
 
   static Future<void> initialize({FirebaseOptions? options}) async {
+    // 이미 초기화된 경우 중복 초기화 방지
+    if (Firebase.apps.isNotEmpty) {
+      debugPrint('Firebase already initialized, skipping...');
+      return;
+    }
+    
     await Firebase.initializeApp(options: options);
     // Web 환경에서 리다이렉트 세션 저장 문제 방지: LOCAL 지속성 사용
     if (kIsWeb) {

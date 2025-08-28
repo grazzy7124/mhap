@@ -232,7 +232,7 @@ class _MapScreenState extends State<MapScreen> {
       });
 
       final locations = await _mapService.loadReviewsFromFirestore();
-      
+
       setState(() {
         _firestoreLocations = locations;
         _isLoadingReviews = false;
@@ -253,7 +253,7 @@ class _MapScreenState extends State<MapScreen> {
       });
 
       final position = await _mapService.getCurrentLocation();
-      
+
       setState(() {
         _currentPosition = position;
         _isLocationLoading = false;
@@ -297,8 +297,10 @@ class _MapScreenState extends State<MapScreen> {
   /// 친구 필터 적용된 위치 목록 반환 (하이브리드 방식)
   List<MapLocation> _getFilteredLocations() {
     // Firestore에 데이터가 있으면 사용, 없으면 목데이터 사용
-    final locations = _firestoreLocations.isNotEmpty ? _firestoreLocations : _dummyLocations;
-    
+    final locations = _firestoreLocations.isNotEmpty
+        ? _firestoreLocations
+        : _dummyLocations;
+
     if (_selectedFriend == 'all') return locations;
     return locations
         .where((l) => l.reviews.any((r) => r.friendName == _selectedFriend))
@@ -369,14 +371,16 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 상세 정보 바텀시트 표시 (인스타그램 스타일 피드)
   void _showLocationDetails(MapLocation location) {
+    final scrollController = ScrollController();
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true, // 스크롤 가능하도록 설정
       builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7, // 초기 높이를 화면의 70%로 설정
-        minChildSize: 0.5, // 최소 높이를 화면의 50%로 설정
-        maxChildSize: 0.95, // 최대 높이를 화면의 95%로 설정
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
         builder: (context, scrollController) => Container(
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -386,7 +390,7 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               // 드래그 핸들
               Container(
-                margin: const EdgeInsets.only(top: 8),
+                margin: const EdgeInsets.only(top: 12),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
@@ -394,9 +398,10 @@ class _MapScreenState extends State<MapScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // 위치 이름과 리뷰 수
+
+              // 위치 이름과 리뷰 수 (인스타그램 스타일)
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
                     Expanded(
@@ -410,36 +415,45 @@ class _MapScreenState extends State<MapScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${location.reviews.length}개의 리뷰',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 16,
-                            ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.photo_library,
+                                color: Colors.grey[600],
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${location.reviews.length}개의 리뷰',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, size: 24),
                     ),
                   ],
                 ),
               ),
-              // 리뷰 목록
+
+              // 인스타그램 스타일 리뷰 피드
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: location.reviews.length,
                   itemBuilder: (context, index) {
                     final review = location.reviews[index];
-                    return ReviewCard(
-                      review: review,
-                      isFirst: index == 0,
-                    );
+                    return _buildInstagramStyleReviewCard(review, index == 0);
                   },
                 ),
               ),
@@ -450,9 +464,191 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  /// 인스타그램 스타일 리뷰 카드
+  Widget _buildInstagramStyleReviewCard(Review review, bool isFirst) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 헤더 (유저 정보 + 시간)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // 유저 아바타
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey[300]!, width: 1),
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      MapService.getFriendIconAsset(review.friendName),
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // 유저 이름
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        review.friendName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        _formatTimestamp(review.timestamp),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 더보기 버튼
+                IconButton(
+                  onPressed: () {},
+                  icon: Icon(Icons.more_horiz, color: Colors.grey[600]),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+
+          // 사진
+          Container(
+            width: double.infinity,
+            height: 300,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                review.photoUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.error, color: Colors.red, size: 50),
+                  );
+                },
+              ),
+            ),
+          ),
+
+          // 액션 버튼들
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.favorite_border, size: 24),
+                  color: Colors.grey[700],
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.chat_bubble_outline, size: 24),
+                  color: Colors.grey[700],
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.send, size: 24),
+                  color: Colors.grey[700],
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.bookmark_border, size: 24),
+                  color: Colors.grey[700],
+                ),
+              ],
+            ),
+          ),
+
+          // 좋아요 수
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              '좋아요 12개',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+          ),
+
+          // 리뷰 코멘트 (있는 경우에만)
+          if (review.comment != null && review.comment!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: RichText(
+                text: TextSpan(
+                  style: DefaultTextStyle.of(context).style,
+                  children: [
+                    TextSpan(
+                      text: review.friendName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const TextSpan(text: ' '),
+                    TextSpan(
+                      text: review.comment,
+                      style: TextStyle(fontSize: 14, color: Colors.grey[800]),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   /// 위치 상세 정보 숨기기
   void _hideLocationDetails() {
     // 현재는 구현하지 않음 (마커 탭 시에만 표시)
+  }
+
+  /// 시간 포맷팅
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}일 전';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}시간 전';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}분 전';
+    } else {
+      return '방금 전';
+    }
   }
 
   /// 마커 위젯들을 생성 (RepaintBoundary로 감싸서 비트맵 변환 가능하게)
@@ -475,7 +671,7 @@ class _MapScreenState extends State<MapScreen> {
         children: [
           // 지도
           _buildCrossPlatformMap(),
-          
+
           // 상단 친구 필터
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
@@ -489,9 +685,12 @@ class _MapScreenState extends State<MapScreen> {
                   _selectedFriend = friend;
                 });
               },
+              onFriendsManage: () {
+                Navigator.pushNamed(context, '/friends-manage');
+              },
             ),
           ),
-          
+
           // 우측 하단 지도 컨트롤 버튼들
           Positioned(
             bottom: MediaQuery.of(context).padding.bottom + 16,
@@ -507,7 +706,7 @@ class _MapScreenState extends State<MapScreen> {
               currentPosition: _currentPosition,
             ),
           ),
-          
+
           // 마커 위젯들 (비트맵 변환을 위해 숨김 처리)
           ..._buildHiddenMarkerWidgets(),
         ],

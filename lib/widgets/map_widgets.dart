@@ -27,10 +27,7 @@ class MarkerWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: MapService.hueToColor(MapService.getMarkerColor(friendName)),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white,
-            width: 2,
-          ),
+          border: Border.all(color: Colors.white, width: 2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.3),
@@ -112,8 +109,8 @@ class CurrentLocationOverlay extends StatelessWidget {
               isLocationLoading
                   ? '확인 중...'
                   : currentPosition != null
-                      ? '위치 확인됨'
-                      : '위치를 확인할 수 없습니다',
+                  ? '위치 확인됨'
+                  : '위치를 확인할 수 없습니다',
               style: TextStyle(
                 fontSize: 10,
                 color: currentPosition != null ? Colors.grey[600] : Colors.red,
@@ -126,75 +123,226 @@ class CurrentLocationOverlay extends StatelessWidget {
   }
 }
 
-/// 친구 필터 위젯
+/// 친구 필터 위젯 (프로필 아이콘 기반)
 class FriendFilterWidget extends StatelessWidget {
   final String selectedFriend;
   final List<String> friends;
   final Function(String) onFriendSelected;
+  final VoidCallback onFriendsManage;
 
   const FriendFilterWidget({
     super.key,
     required this.selectedFriend,
     required this.friends,
     required this.onFriendSelected,
+    required this.onFriendsManage,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 50,
-      left: 20,
-      right: 20,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: friends.length,
-          itemBuilder: (context, index) {
-            final friend = friends[index];
-            final isSelected = selectedFriend == friend;
-            return GestureDetector(
-              onTap: () => onFriendSelected(friend),
-              child: Container(
-                margin: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 4,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.green : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Center(
-                  child: Text(
-                    friend == 'all' ? '전체' : friend,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey[700],
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+    return Container(
+      height: 80,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount:
+            2 + friends.where((f) => f != 'all').length, // 전체보기 + 친구관리 + 친구들
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            // 전체 보기 버튼
+            return Container(
+              margin: const EdgeInsets.only(right: 12),
+              child: GestureDetector(
+                onTap: () => onFriendSelected('all'),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: selectedFriend == 'all'
+                        ? Colors.blue
+                        : Colors.grey[100],
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selectedFriend == 'all'
+                          ? Colors.blue
+                          : Colors.grey[300]!,
+                      width: 2,
                     ),
+                  ),
+                  child: Icon(
+                    Icons.grid_view,
+                    color: selectedFriend == 'all'
+                        ? Colors.white
+                        : Colors.grey[600],
+                    size: 24,
                   ),
                 ),
               ),
             );
-          },
+          } else if (index == 1) {
+            // 친구 관리 버튼
+            return Container(
+              margin: const EdgeInsets.only(right: 12),
+              child: GestureDetector(
+                onTap: onFriendsManage,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.orange, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.people,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            );
+          } else {
+            // 친구들 프로필 아이콘
+            final friendIndex = index - 2;
+            final friend = friends
+                .where((f) => f != 'all')
+                .toList()[friendIndex];
+            final isSelected = selectedFriend == friend;
+
+            return Container(
+              margin: const EdgeInsets.only(right: 12),
+              child: GestureDetector(
+                onTap: () => onFriendSelected(friend),
+                child: Stack(
+                  children: [
+                    // 프로필 이미지 (배경 없음)
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? Colors.blue : Colors.transparent,
+                          width: isSelected ? 3 : 0,
+                        ),
+                      ),
+                      child: ClipOval(child: _buildFriendProfileImage(friend)),
+                    ),
+                    // 선택 표시
+                    if (isSelected)
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: const BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  /// 친구 프로필 이미지 생성
+  Widget _buildFriendProfileImage(String friendName) {
+    // 실제 프로필 이미지가 있다면 사용, 없으면 기본 아이콘 사용
+    return FutureBuilder<String?>(
+      future: _getFriendProfileImage(friendName),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          // 실제 프로필 이미지가 있는 경우
+          return Image.network(
+            snapshot.data!,
+            width: 60,
+            height: 60,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildDefaultProfileIcon(friendName);
+            },
+          );
+        } else {
+          // 기본 프로필 아이콘 사용
+          return _buildDefaultProfileIcon(friendName);
+        }
+      },
+    );
+  }
+
+  /// 기본 프로필 아이콘 생성
+  Widget _buildDefaultProfileIcon(String friendName) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: _getFriendColor(friendName),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          friendName.substring(0, 1),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
+  }
+
+  /// 친구별 색상 반환
+  Color _getFriendColor(String friendName) {
+    final colors = [
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.pink,
+      Colors.teal,
+      Colors.indigo,
+    ];
+
+    final index = friendName.hashCode % colors.length;
+    return colors[index];
+  }
+
+  /// 친구 프로필 이미지 URL 가져오기 (Firestore에서)
+  Future<String?> _getFriendProfileImage(String friendName) async {
+    try {
+      // TODO: Firestore에서 친구 프로필 이미지 가져오기
+      // 현재는 더미 데이터 반환
+      final dummyProfiles = {
+        '기노은':
+            'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+        '권하민':
+            'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+        '정태주':
+            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+        '박예은':
+            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+        '이찬민':
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+      };
+
+      return dummyProfiles[friendName];
+    } catch (e) {
+      return null;
+    }
   }
 }
 
@@ -251,11 +399,7 @@ class ReviewCard extends StatelessWidget {
   final Review review;
   final bool isFirst;
 
-  const ReviewCard({
-    super.key,
-    required this.review,
-    required this.isFirst,
-  });
+  const ReviewCard({super.key, required this.review, required this.isFirst});
 
   @override
   Widget build(BuildContext context) {
@@ -286,7 +430,9 @@ class ReviewCard extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: MapService.hueToColor(MapService.getMarkerColor(review.friendName)),
+                    color: MapService.hueToColor(
+                      MapService.getMarkerColor(review.friendName),
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
