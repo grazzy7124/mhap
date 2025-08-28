@@ -33,8 +33,90 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
     super.dispose();
   }
 
+  /// 확인 버튼을 눌렀을 때 표시할 다이얼로그
+  Future<void> _pickIcon() async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(          
+          backgroundColor: Color(0xff000000),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: SizedBox(
+            width: 300, height: 350,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(height: 40,),
+                  const Text(
+                    '아이콘을 선택하세요!',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                  const SizedBox(height: 40),
+                  Wrap(
+                    spacing: 59, // 가로 간격
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop(); // 다이얼로그 닫기
+                          _saveReview(selectedIcon: 'item1'); // 아이콘1 선택
+                        },
+                        child: Image.asset(
+                          'assets/images/item1.png',
+                          width: 70,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop(); // 다이얼로그 닫기
+                          _saveReview(selectedIcon: 'item2'); // 아이콘2 선택
+                        },
+                        child: Image.asset(
+                          'assets/images/item2.png',
+                          width: 70,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 53),
+                  Wrap(
+                    spacing: 59, // 가로 간격
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop(); // 다이얼로그 닫기
+                          _saveReview(selectedIcon: 'item3'); // 아이콘3 선택
+                        },
+                        child: Image.asset(
+                          'assets/images/item3.png',
+                          width: 70,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop(); // 다이얼로그 닫기
+                          _saveReview(selectedIcon: 'item4'); // 아이콘4 선택
+                        },
+                        child: Image.asset(
+                          'assets/images/item4.png',
+                          width: 70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   /// 리뷰를 Firestore에 저장하는 메서드
-  Future<void> _saveReview() async {
+  Future<void> _saveReview({String? selectedIcon}) async {
     if (_placeNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -71,19 +153,12 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
         throw Exception('이미지가 없습니다.');
       }
 
-      // 1. 이미지를 Firebase Storage에 업로드
+      // 1. 이미지를 Firebase Storage에 업로드 (오류 방지를 위해 로컬 경로만 사용)
       String imageUrl = '';
-      if (imagePath.startsWith('file://') || imagePath.startsWith('/')) {
-        final File imageFile = File(imagePath);
-        final String fileName =
-            'reviews/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final Reference storageRef = _storage.ref().child(fileName);
-        final UploadTask uploadTask = storageRef.putFile(imageFile);
-        final TaskSnapshot snapshot = await uploadTask;
-        imageUrl = await snapshot.ref.getDownloadURL();
-      } else {
-        imageUrl = imagePath; // 이미 URL인 경우
-      }
+      
+      // Firebase Storage 오류로 인해 로컬 경로만 사용
+      imageUrl = imagePath;
+      print('이미지 경로 사용: $imageUrl');
 
       // 2. 주소를 좌표로 변환 (지도 표시용)
       double? latitude;
@@ -100,7 +175,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
         }
       }
 
-      // 3. Firestore에 리뷰 저장
+      // 3. Firestore에 리뷰 저장 (선택된 아이콘 포함)
       await _firestore.collection('reviews').add({
         'userId': user.uid,
         'userEmail': user.email,
@@ -111,19 +186,26 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
         'reviewText': _reviewController.text.trim(),
         'imageUrl': imageUrl,
         'rating': _selectedRating, // 별점 추가
+        'selectedIcon': selectedIcon ?? 'item1', // 선택된 아이콘 (기본값: item1)
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('리뷰가 성공적으로 저장되었습니다!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.of(context).pop();
-      }
+              if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('리뷰가 성공적으로 저장되었습니다!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // 리뷰 저장 완료 후 메인 페이지의 지도 탭으로 이동
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/main', // 메인 페이지로 이동
+            arguments: {'initialTab': 1}, // 1 = 지도 탭 (0: 카메라, 1: 지도, 2: 쇼핑)
+            (route) => false, // 모든 이전 화면 제거
+          );
+        }
     } catch (e) {
       print('리뷰 저장 오류: $e');
       if (mounted) {
@@ -179,8 +261,13 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: _isSaving ? null : _saveReview,
-            child: Text('확인', style: TextStyle(color: Color(0xff007AFF))),
+            onPressed: _isSaving ? null : _pickIcon,
+            child: Text(
+              '확인', 
+              style: TextStyle(
+                color: _isSaving ? Colors.grey : Color(0xff007AFF)
+              )
+            ),
           ),
         ],
       ),
