@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../services/firebase_service.dart';
+import '../firebase_options.dart';
 
 /// 온보딩 화면
 ///
@@ -33,10 +35,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Firebase 초기화 상태 확인
+    _ensureFirebaseInitialized();
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  /// Firebase가 초기화되었는지 확인하고 필요시 초기화
+  Future<void> _ensureFirebaseInitialized() async {
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        await FirebaseService.initialize();
+        debugPrint('OnboardingScreen: Firebase 초기화 완료');
+      }
+    } catch (e) {
+      debugPrint('OnboardingScreen: Firebase 초기화 오류: $e');
+    }
   }
 
   /// (이메일/비번 폼 제출은 현재 미사용)
@@ -58,6 +82,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _isLoading = true;
     });
     try {
+      // Firebase 초기화 상태 재확인
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        await FirebaseService.initialize();
+        debugPrint('Google 로그인 시 Firebase 초기화 완료');
+      }
+      
       await FirebaseService.signInWithGoogle();
       await _afterLoginSuccess();
     } catch (e) {
