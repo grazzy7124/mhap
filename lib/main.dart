@@ -47,11 +47,10 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      // 초기 경로를 온보딩 화면으로 설정
-      initialRoute: '/',
+      // 초기 경로를 앱 시작 화면으로 설정 (Firebase 초기화를 위해)
+      initialRoute: '/startup',
       // 전역 라우트 테이블
       routes: {
-        '/': (context) => const OnboardingScreen(),
         '/startup': (context) => const AppStartupScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/main': (context) => const MainPage(),
@@ -100,15 +99,17 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
-        // Firebase 서비스 초기화
-        await FirebaseService.initialize();
+        debugPrint('Firebase 초기화 완료');
       } else {
-        // 이미 초기화된 경우 Firebase 서비스만 초기화
-        try {
-          await FirebaseService.initialize();
-        } catch (e) {
-          debugPrint('Firebase 서비스 초기화 오류: $e');
-        }
+        debugPrint('Firebase 이미 초기화됨');
+      }
+      
+      // Firebase 서비스 초기화
+      try {
+        await FirebaseService.initialize();
+        debugPrint('Firebase 서비스 초기화 완료');
+      } catch (e) {
+        debugPrint('Firebase 서비스 초기화 오류: $e');
       }
 
       if (mounted) {
@@ -126,19 +127,33 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
   /// 온보딩 완료 여부 확인 후 분기 이동
   Future<void> _checkOnboardingStatus() async {
     try {
+      // Firebase 인증 상태 확인
+      final currentUser = FirebaseService.currentUser;
       final prefs = await SharedPreferences.getInstance();
-      final onboardingCompleted =
-          prefs.getBool('onboarding_completed') ?? false;
+      final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+      
       if (!mounted) return;
 
-      // 3초 후에도 확인이 안 되면 강제로 온보딩으로 이동
-      await Future.delayed(const Duration(seconds: 3));
-      if (!mounted) return;
-
-      if (onboardingCompleted) {
-        _navigateToMainPage();
+      // Firebase 인증 상태에 따른 분기
+      if (currentUser != null) {
+        // 이미 로그인된 사용자
+        debugPrint('사용자 이미 로그인됨: ${currentUser.email}');
+        if (onboardingCompleted) {
+          _navigateToMainPage();
+        } else {
+          // 온보딩 완료 플래그 설정 후 메인으로 이동
+          await prefs.setBool('onboarding_completed', true);
+          _navigateToMainPage();
+        }
       } else {
-        _navigateToOnboarding();
+        // 로그인되지 않은 사용자
+        debugPrint('사용자 로그인되지 않음');
+        if (onboardingCompleted) {
+          // 온보딩은 완료했지만 로그아웃된 경우
+          _navigateToOnboarding();
+        } else {
+          _navigateToOnboarding();
+        }
       }
     } catch (e) {
       debugPrint('온보딩 상태 확인 오류: $e');
