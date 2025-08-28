@@ -22,6 +22,8 @@ class FriendService {
       final currentUid = currentUserId;
       if (currentUid == null) return null;
 
+
+
       // 이미 친구인지 확인
       final isAlreadyFriend = await _isAlreadyFriend(currentUid, uid);
       
@@ -38,6 +40,7 @@ class FriendService {
       return null;
     }
   }
+
 
   /// 친구 요청 보내기
   static Future<bool> sendFriendRequest(String toUserId) async {
@@ -117,6 +120,87 @@ class FriendService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+<<<<<<< HEAD
+      // 3) 카운터 업데이트(옵션)
+      final fromRef = _fs.collection('users').doc(data['fromUid']);
+      final toRef = _fs.collection('users').doc(data['toUid']);
+      tx.update(fromRef, {'friendCount': FieldValue.increment(1)});
+      tx.update(toRef, {
+        'friendCount': FieldValue.increment(1),
+        'incomingRequestCount': FieldValue.increment(-1),
+      });
+    });
+  }
+
+  /// 친구 요청 거절 (받은 사람)
+  Future<void> rejectRequest(String requestId) async {
+    final reqRef = _reqCol.doc(requestId);
+    await _fs.runTransaction((tx) async {
+      final snap = await tx.get(reqRef);
+      if (!snap.exists) return;
+      final data = snap.data()!;
+      if (data['toUid'] != _uid) throw StateError('거절 권한이 없습니다.');
+      if (data['status'] != 'pending') return;
+
+      tx.update(reqRef, {
+        'status': 'rejected',
+        'respondedAt': FieldValue.serverTimestamp(),
+      });
+
+      final toRef = _fs.collection('users').doc(_uid);
+      tx.update(toRef, {'incomingRequestCount': FieldValue.increment(-1)});
+    });
+  }
+
+  /// 친구 끊기
+  Future<void> unfriend(String otherUid) async {
+    final pid = _pairId(_uid, otherUid);
+    final ref = _fs.collection('friendships').doc(pid);
+    await _fs.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      tx.delete(ref);
+      tx.update(_fs.collection('users').doc(_uid), {
+        'friendCount': FieldValue.increment(-1),
+      });
+      tx.update(_fs.collection('users').doc(otherUid), {
+        'friendCount': FieldValue.increment(-1),
+      });
+    });
+  }
+
+  /// 받은 요청 목록(pending)
+  Stream<QuerySnapshot<Map<String, dynamic>>> pendingInbox() {
+    return _reqCol
+        .where('toUid', isEqualTo: _uid)
+        .where('status', isEqualTo: 'pending')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  /// 보낸 요청 목록(pending)
+  Stream<QuerySnapshot<Map<String, dynamic>>> pendingOutbox() {
+    return _reqCol
+        .where('fromUid', isEqualTo: _uid)
+        .where('status', isEqualTo: 'pending')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  /// 내 친구들의 uid 집합 조회(단발)
+  Future<Set<String>> getFriendIdsOnce() async {
+    final snap = await _fs
+        .collection('friendships')
+        .where('uids', arrayContains: _uid)
+        .get();
+
+    final ids = <String>{};
+    for (final d in snap.docs) {
+      final List<dynamic> u = d['uids'];
+      for (final id in u) {
+        if (id != _uid) ids.add(id as String);
+      }
+=======
       return true;
     } catch (e) {
       print('친구 요청 수락 오류: $e');
@@ -256,6 +340,7 @@ class FriendService {
       return query.docs.isNotEmpty;
     } catch (e) {
       return false;
+>>>>>>> dbe0374290c10e1e1023d4300805b8fa146b1b26
     }
   }
 }

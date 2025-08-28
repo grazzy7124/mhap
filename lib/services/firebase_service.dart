@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 class FirebaseService {
   static FirebaseFirestore? _firestore;
   static FirebaseAuth? _auth;
+  static bool _isInitialized = false;
 
   static FirebaseFirestore get firestore =>
       _firestore ??= FirebaseFirestore.instance;
@@ -24,19 +25,45 @@ class FirebaseService {
 
   static Future<void> initialize({FirebaseOptions? options}) async {
     // 이미 초기화된 경우 중복 초기화 방지
-    if (Firebase.apps.isNotEmpty) {
+    if (_isInitialized && Firebase.apps.isNotEmpty) {
       debugPrint('Firebase already initialized, skipping...');
       return;
     }
 
-    await Firebase.initializeApp(options: options);
-    // Web 환경에서 리다이렉트 세션 저장 문제 방지: LOCAL 지속성 사용
-    if (kIsWeb) {
-      try {
-        await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
-      } catch (_) {
-        // ignore persistence errors on non-web
+    try {
+      if (Firebase.apps.isEmpty) {
+        if (options != null) {
+          await Firebase.initializeApp(options: options);
+          debugPrint('Firebase initialized with custom options');
+        } else {
+          // options가 없으면 기본 설정으로 초기화
+          await Firebase.initializeApp();
+          debugPrint('Firebase initialized with default options');
+        }
+      } else {
+        debugPrint('Firebase already initialized, skipping...');
       }
+
+      // Firebase가 실제로 초기화되었는지 확인
+      if (Firebase.apps.isEmpty) {
+        throw Exception('Firebase initialization failed - no apps available');
+      }
+
+      // Web 환경에서 리다이렉트 세션 저장 문제 방지: LOCAL 지속성 사용
+      if (kIsWeb) {
+        try {
+          await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+        } catch (_) {
+          // ignore persistence errors on non-web
+        }
+      }
+
+      _isInitialized = true;
+      debugPrint('Firebase service initialized successfully');
+    } catch (e) {
+      debugPrint('Firebase initialization error: $e');
+      _isInitialized = false;
+      rethrow;
     }
   }
 
@@ -51,17 +78,31 @@ class FirebaseService {
   // ----------------------------
   static Future<UserCredential> signInWithGoogle() async {
     try {
+      debugPrint('Starting Google sign in...');
+
+      // Firebase가 초기화되었는지 확인
+      if (Firebase.apps.isEmpty) {
+        throw Exception('Firebase가 초기화되지 않았습니다. 앱을 다시 시작해주세요.');
+      }
+
       // Firebase Auth의 GoogleAuthProvider로 직접 로그인
       final googleProvider = GoogleAuthProvider();
       googleProvider.setCustomParameters({'prompt': 'select_account'});
+
+      debugPrint('Google provider created, attempting sign in...');
 
       // Web에서는 리다이렉트 대신 팝업 사용하여 sessionStorage 문제 회피
       final UserCredential userCred = kIsWeb
           ? await auth.signInWithPopup(googleProvider)
           : await auth.signInWithProvider(googleProvider);
+
+      debugPrint('Google sign in successful: ${userCred.user?.email}');
+
       await ensureUserProfile(userCred.user);
       return userCred;
     } catch (e) {
+      debugPrint('Google sign in error: $e');
+
       // iOS에서 Google 로그인 실패 시 더 자세한 오류 정보 제공
       if (Platform.isIOS) {
         if (e.toString().contains('network')) {
@@ -70,6 +111,8 @@ class FirebaseService {
           throw Exception('로그인이 취소되었습니다.');
         } else if (e.toString().contains('popup')) {
           throw Exception('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
+        } else if (e.toString().contains('configuration')) {
+          throw Exception('Firebase 설정 오류입니다. 앱을 재시작해주세요.');
         }
       }
       throw Exception('Google 로그인 오류: $e');

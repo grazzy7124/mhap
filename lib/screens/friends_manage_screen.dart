@@ -54,11 +54,7 @@ class _FriendsManageScreenState extends State<FriendsManageScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFFDD3397), 
-                Color(0xFFF46061),
-                Color(0xffFEA440)
-              ],
+              colors: [Color(0xFFDD3397), Color(0xFFF46061), Color(0xffFEA440)],
             ),
           ),
           child: TabBarView(
@@ -105,9 +101,9 @@ class _FriendsManageScreenState extends State<FriendsManageScreen> {
         _isSearching = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('검색 오류: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('검색 오류: $e')));
       }
     }
   }
@@ -116,17 +112,17 @@ class _FriendsManageScreenState extends State<FriendsManageScreen> {
     try {
       final success = await FriendService.sendFriendRequest(toUserId);
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('친구 요청을 보냈습니다!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('친구 요청을 보냈습니다!')));
         // 검색 결과 업데이트
         _performSearch();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('요청 전송 실패: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('요청 전송 실패: $e')));
       }
     }
   }
@@ -142,8 +138,8 @@ class _SegmentedTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(14), 
-          topRight: Radius.circular(14)
+          topLeft: Radius.circular(14),
+          topRight: Radius.circular(14),
         ),
       ),
       child: TabBar(
@@ -153,8 +149,8 @@ class _SegmentedTabBar extends StatelessWidget {
         indicator: BoxDecoration(
           color: const Color(0xFFDD3397),
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(10), 
-            topRight: Radius.circular(10)
+            topLeft: Radius.circular(10),
+            topRight: Radius.circular(10),
           ),
         ),
         labelColor: Colors.white,
@@ -204,8 +200,8 @@ class _FriendAddTab extends StatelessWidget {
                 hintText: 'ID 검색',
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20, 
-                  vertical: 15
+                  horizontal: 20,
+                  vertical: 15,
                 ),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.search),
@@ -215,13 +211,11 @@ class _FriendAddTab extends StatelessWidget {
               onSubmitted: (_) => onSearch(),
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // 검색 결과 또는 안내 메시지
-          Expanded(
-            child: _buildSearchContent(),
-          ),
+          Expanded(child: _buildSearchContent()),
         ],
       ),
     );
@@ -255,10 +249,7 @@ class _SearchResultCard extends StatelessWidget {
   final UserSearchResult result;
   final Function(String) onSendRequest;
 
-  const _SearchResultCard({
-    required this.result,
-    required this.onSendRequest,
-  });
+  const _SearchResultCard({required this.result, required this.onSendRequest});
 
   @override
   Widget build(BuildContext context) {
@@ -274,11 +265,11 @@ class _SearchResultCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 25,
-                  backgroundImage: result.photoURL != null 
-                      ? NetworkImage(result.photoURL!) 
+                  backgroundImage: result.photoURL != null
+                      ? NetworkImage(result.photoURL!)
                       : null,
                   backgroundColor: Colors.grey[300],
-                  child: result.photoURL == null 
+                  child: result.photoURL == null
                       ? const Icon(Icons.person, size: 30)
                       : null,
                 ),
@@ -296,19 +287,16 @@ class _SearchResultCard extends StatelessWidget {
                       ),
                       Text(
                         'ID: ${result.uid}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // 상태 및 액션 버튼
             if (result.isAlreadyFriend)
               const _StatusChip(
@@ -431,11 +419,11 @@ class _FriendRow extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       leading: CircleAvatar(
         radius: 20,
-        backgroundImage: friend.photoURL != null 
-            ? NetworkImage(friend.photoURL!) 
+        backgroundImage: friend.photoURL != null
+            ? NetworkImage(friend.photoURL!)
             : null,
         backgroundColor: Colors.white24,
-        child: friend.photoURL == null 
+        child: friend.photoURL == null
             ? const Icon(Icons.person, color: Colors.white)
             : null,
       ),
@@ -449,10 +437,7 @@ class _FriendRow extends StatelessWidget {
       ),
       subtitle: Text(
         '친구 추가: ${_formatDate(friend.addedAt)}',
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
-          fontSize: 12,
-        ),
+        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
       ),
       trailing: _PillButton(
         label: '삭제',
@@ -494,15 +479,15 @@ class _FriendRow extends StatelessWidget {
     try {
       final success = await FriendService.removeFriend(friend.uid);
       if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('친구가 삭제되었습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('친구가 삭제되었습니다')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('삭제 실패: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
       }
     }
   }
@@ -568,11 +553,11 @@ class _FriendRequestRow extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       leading: CircleAvatar(
         radius: 20,
-        backgroundImage: request.fromUserPhotoURL != null 
-            ? NetworkImage(request.fromUserPhotoURL!) 
+        backgroundImage: request.fromUserPhotoURL != null
+            ? NetworkImage(request.fromUserPhotoURL!)
             : null,
         backgroundColor: Colors.white24,
-        child: request.fromUserPhotoURL == null 
+        child: request.fromUserPhotoURL == null
             ? const Icon(Icons.person, color: Colors.white)
             : null,
       ),
@@ -586,10 +571,7 @@ class _FriendRequestRow extends StatelessWidget {
       ),
       subtitle: Text(
         '요청: ${_formatDate(request.createdAt)}',
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
-          fontSize: 12,
-        ),
+        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
       ),
       trailing: Wrap(
         spacing: 8,
@@ -617,15 +599,15 @@ class _FriendRequestRow extends StatelessWidget {
     try {
       final success = await FriendService.acceptFriendRequest(request.id);
       if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('친구 요청을 수락했습니다!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('친구 요청을 수락했습니다!')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('수락 실패: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('수락 실패: $e')));
       }
     }
   }
@@ -634,15 +616,15 @@ class _FriendRequestRow extends StatelessWidget {
     try {
       final success = await FriendService.rejectFriendRequest(request.id);
       if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('친구 요청을 거절했습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('친구 요청을 거절했습니다')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('거절 실패: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('거절 실패: $e')));
       }
     }
   }
@@ -654,11 +636,7 @@ class _PillButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Color? color;
 
-  const _PillButton({
-    required this.label, 
-    required this.onPressed,
-    this.color,
-  });
+  const _PillButton({required this.label, required this.onPressed, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -670,7 +648,11 @@ class _PillButton extends StatelessWidget {
         side: BorderSide.none,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         shape: const StadiumBorder(),
-        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: Colors.black),
+        textStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          color: Colors.black,
+        ),
         minimumSize: const Size(0, 0),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),

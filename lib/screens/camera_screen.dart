@@ -34,15 +34,13 @@ class _CameraScreenState extends State<CameraScreen> {
   CameraController? _cameraController;
   Future<void>? _initializeControllerFuture;
   String? _selectedImagePath; // 선택된 이미지 경로
-  
+
   // 사용 가능한 카메라 목록과 현재 카메라
   List<CameraDescription>? _availableCameras;
   CameraDescription? _currentCamera;
-  
+
   // 촬영 시 화면 플래시 효과
   bool _showCaptureFlash = false;
-  
-
 
   @override
   void initState() {
@@ -70,11 +68,11 @@ class _CameraScreenState extends State<CameraScreen> {
       );
       _cameraController = controller;
       _initializeControllerFuture = controller.initialize();
-      
+
       // 카메라 초기화 완료 후 기본 플래시 모드 설정
       await _initializeControllerFuture;
       await controller.setFlashMode(FlashMode.off);
-      
+
       if (mounted) setState(() {});
     } catch (e) {
       debugPrint('카메라 초기화 실패: $e');
@@ -131,26 +129,35 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  /// 현재 위치를 가져오는 메서드
+  /// 현재 위치를 가져오는 메서드 (최고 정확도)
   ///
   /// GPS를 통해 현재 위치 정보를 가져와서 상태에 저장합니다.
   /// 위치 정보는 사진과 함께 Firebase에 업로드될 예정입니다.
+  /// 소수점 7자리까지의 정확도를 지원합니다.
   Future<void> _getCurrentLocation() async {
     try {
       setState(() {
         _isLoading = true;
       });
 
-      // 현재 위치 가져오기 (높은 정확도, 10초 타임아웃)
+      // 현재 위치 가져오기 (최고 정확도, 15초 타임아웃)
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        desiredAccuracy: LocationAccuracy.bestForNavigation, // 최고 정확도
+        timeLimit: const Duration(seconds: 15), // 더 긴 대기 시간
+        forceAndroidLocationManager: false, // Android에서 최신 위치 서비스 사용
       );
 
       setState(() {
         _currentPosition = position;
         _isLoading = false;
       });
+
+      // 위치 정확도 정보 로그 출력
+      debugPrint('📍 GPS 위치 획득 완료:');
+      debugPrint('   위도: ${position.latitude.toStringAsFixed(7)}');
+      debugPrint('   경도: ${position.longitude.toStringAsFixed(7)}');
+      debugPrint('   정확도: ${position.accuracy.toStringAsFixed(1)}m');
+      debugPrint('   Mock 위치: ${position.isMocked}');
     } catch (e) {
       print('현재 위치 가져오기 오류: $e');
       setState(() {
@@ -211,14 +218,18 @@ class _CameraScreenState extends State<CameraScreen> {
             );
             if (placemarks.isNotEmpty) {
               Placemark place = placemarks.first;
-              resolvedAddress = '${place.administrativeArea} ${place.subLocality} ${place.thoroughfare}'.trim();
+              resolvedAddress =
+                  '${place.administrativeArea} ${place.subLocality} ${place.thoroughfare}'
+                      .trim();
               if (resolvedAddress.isEmpty) {
-                resolvedAddress = '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}';
+                resolvedAddress =
+                    '${_currentPosition!.latitude.toStringAsFixed(7)}, ${_currentPosition!.longitude.toStringAsFixed(7)}';
               }
             }
           } catch (e) {
             print('주소 변환 실패: $e');
-            resolvedAddress = '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}';
+            resolvedAddress =
+                '${_currentPosition!.latitude.toStringAsFixed(7)}, ${_currentPosition!.longitude.toStringAsFixed(7)}';
           }
         }
 
@@ -230,6 +241,8 @@ class _CameraScreenState extends State<CameraScreen> {
           arguments: {
             'imagePath': photo.path,
             'address': resolvedAddress,
+            if (_currentPosition != null) 'lat': _currentPosition!.latitude,
+            if (_currentPosition != null) 'lng': _currentPosition!.longitude,
           },
         );
       } else {
@@ -268,7 +281,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
       if (image != null) {
         setState(() {
-          _selectedImagePath = image!.path;
+          _selectedImagePath = image.path;
           _isLoading = false;
         });
 
@@ -344,17 +357,17 @@ class _CameraScreenState extends State<CameraScreen> {
     try {
       // 카메라 초기화 완료까지 기다리기
       await _initializeControllerFuture;
-      
+
       // 플래시 상태 토글
       setState(() {
         _isFlashOn = !_isFlashOn;
       });
-      
+
       // 카메라 컨트롤러에 플래시 모드 설정
       await _cameraController!.setFlashMode(
-        _isFlashOn ? FlashMode.auto : FlashMode.off
+        _isFlashOn ? FlashMode.auto : FlashMode.off,
       );
-      
+
       print('플래시 ${_isFlashOn ? "켜짐 (자동 모드 - 촬영 시 필요시 작동)" : "꺼짐"}');
     } catch (e) {
       print('플래시 설정 오류: $e');
@@ -369,9 +382,12 @@ class _CameraScreenState extends State<CameraScreen> {
   Future<void> _switchCamera() async {
     try {
       if (_availableCameras == null || _availableCameras!.isEmpty) return;
-      final bool isBack = _currentCamera?.lensDirection == CameraLensDirection.back;
+      final bool isBack =
+          _currentCamera?.lensDirection == CameraLensDirection.back;
       final CameraDescription next = _availableCameras!.firstWhere(
-        (c) => isBack ? c.lensDirection == CameraLensDirection.front : c.lensDirection == CameraLensDirection.back,
+        (c) => isBack
+            ? c.lensDirection == CameraLensDirection.front
+            : c.lensDirection == CameraLensDirection.back,
         orElse: () => _availableCameras!.first,
       );
       if (_cameraController != null) {
@@ -505,7 +521,7 @@ class _CameraScreenState extends State<CameraScreen> {
               // 상단 툴바
               Container(
                 padding: const EdgeInsets.only(top: 120, left: 20, right: 20),
-              ), 
+              ),
 
               // 카메라 프리뷰 영역
               Expanded(
@@ -524,7 +540,8 @@ class _CameraScreenState extends State<CameraScreen> {
                       ? FutureBuilder<void>(
                           future: _initializeControllerFuture,
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.done) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.done) {
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: _isLoading ? null : _takePhoto,
@@ -538,9 +555,21 @@ class _CameraScreenState extends State<CameraScreen> {
                                           child: FittedBox(
                                             fit: BoxFit.cover,
                                             child: SizedBox(
-                                              width: _cameraController!.value.previewSize?.width ?? 1080,
-                                              height: _cameraController!.value.previewSize?.height ?? 1920,
-                                              child: CameraPreview(_cameraController!),
+                                              width:
+                                                  _cameraController!
+                                                      .value
+                                                      .previewSize
+                                                      ?.width ??
+                                                  1080,
+                                              height:
+                                                  _cameraController!
+                                                      .value
+                                                      .previewSize
+                                                      ?.height ??
+                                                  1920,
+                                              child: CameraPreview(
+                                                _cameraController!,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -548,8 +577,12 @@ class _CameraScreenState extends State<CameraScreen> {
                                         IgnorePointer(
                                           child: Container(
                                             decoration: BoxDecoration(
-                                              border: Border.all(color: Colors.white70, width: 2),
-                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: Colors.white70,
+                                                width: 2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
                                           ),
                                         ),
@@ -575,9 +608,16 @@ class _CameraScreenState extends State<CameraScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Icon(Icons.camera_alt, color: Colors.white54, size: 48),
+                              Icon(
+                                Icons.camera_alt,
+                                color: Colors.white54,
+                                size: 48,
+                              ),
                               SizedBox(height: 12),
-                              Text('카메라 초기화 중...', style: TextStyle(color: Colors.white70)),
+                              Text(
+                                '카메라 초기화 중...',
+                                style: TextStyle(color: Colors.white70),
+                              ),
                             ],
                           ),
                         ),
@@ -586,7 +626,12 @@ class _CameraScreenState extends State<CameraScreen> {
 
               // 하단 컨트롤 버튼들
               Container(
-                padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 30),
+                padding: const EdgeInsets.only(
+                  top: 50,
+                  left: 20,
+                  right: 20,
+                  bottom: 30,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -597,17 +642,20 @@ class _CameraScreenState extends State<CameraScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                                             child: IconButton(
-                         icon: Image.asset(
-                           _isFlashOn 
-                             ? 'assets/images/flash_filled.png' 
-                             : 'assets/images/flash.png',
-                             width: 20, height: 24,
-                         ),
-                                                 onPressed: _isLoading ? null : () async {
-                          await _toggleFlash();
-                        },
-                       ),
+                      child: IconButton(
+                        icon: Image.asset(
+                          _isFlashOn
+                              ? 'assets/images/flash_filled.png'
+                              : 'assets/images/flash.png',
+                          width: 20,
+                          height: 24,
+                        ),
+                        onPressed: _isLoading
+                            ? null
+                            : () async {
+                                await _toggleFlash();
+                              },
+                      ),
                     ),
 
                     // 촬영 버튼
@@ -616,9 +664,7 @@ class _CameraScreenState extends State<CameraScreen> {
                       height: 80,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(40),
-                        border: Border.all(
-                          width: 4,
-                        ),
+                        border: Border.all(width: 4),
                       ),
                       child: GestureDetector(
                         onTap: _isLoading ? null : _takePhoto,
@@ -627,7 +673,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     ),
 
                     // 카메라 전환 버튼
-                    Container(
+                    SizedBox(
                       width: 60,
                       height: 60,
                       child: IconButton(
@@ -677,6 +723,53 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
               ),
             ),
+
+          // 우측 상단 맵 이동 화살표 버튼
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 16,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black45,
+                border: Border.all(color: Colors.white70, width: 1),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () {
+                    Navigator.of(context).pushReplacementNamed(
+                      '/main',
+                      arguments: {'initialTab': 1},
+                    );
+                  },
+                  child: const Center(
+                    child: Icon(Icons.arrow_forward, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 우측 스와이프 제스처로 맵 이동
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity != null &&
+                    details.primaryVelocity! > 400) {
+                  // 오른쪽으로 빠르게 스와이프 → 지도 탭으로
+                  Navigator.of(
+                    context,
+                  ).pushReplacementNamed('/main', arguments: {'initialTab': 1});
+                }
+              },
+            ),
+          ),
         ],
       ),
     );

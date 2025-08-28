@@ -21,24 +21,78 @@ class MapService {
       // 리뷰들을 위치별로 그룹화
       for (final doc in snapshot.docs) {
         final data = doc.data();
-        final latitude = data['latitude'] as double?;
-        final longitude = data['longitude'] as double?;
-        
+
+        // 🔥 핵심: GeoPoint 기반 GPS 좌표 우선 사용 (Firestore 권장)
+        double? latitude;
+        double? longitude;
+
+        // 1순위: GeoPoint 기반 GPS (Firestore 권장 방식)
+        final geoPoint = data['location'] as GeoPoint?;
+        if (geoPoint != null) {
+          latitude = geoPoint.latitude;
+          longitude = geoPoint.longitude;
+          debugPrint(
+            '📍 GeoPoint 기반 GPS 사용: ${latitude.toStringAsFixed(7)}, ${longitude.toStringAsFixed(7)}',
+          );
+        }
+
+        // 2순위: 문자열 기반 GPS (정밀도 보존용)
+        if (latitude == null || longitude == null) {
+          final latString = data['latitudeString'] as String?;
+          final lngString = data['longitudeString'] as String?;
+          if (latString != null && lngString != null) {
+            latitude = double.parse(latString);
+            longitude = double.parse(lngString);
+            debugPrint('📍 문자열 기반 GPS 사용: $latString, $lngString');
+          }
+        }
+
+        // 3순위: double 기반 GPS (호환성)
+        if (latitude == null || longitude == null) {
+          latitude = data['latitude'] as double?;
+          longitude = data['longitude'] as double?;
+          if (latitude != null && longitude != null) {
+            debugPrint('📍 double 기반 GPS 사용: $latitude, $longitude');
+          }
+        }
+
+        // 4순위: 기존 loc 필드 (레거시 호환성)
+        if (latitude == null || longitude == null) {
+          final oldGeoPoint = data['loc'] as GeoPoint?;
+          if (oldGeoPoint != null) {
+            latitude = oldGeoPoint.latitude;
+            longitude = oldGeoPoint.longitude;
+            debugPrint('📍 기존 loc 필드 GPS 사용: $latitude, $longitude');
+          }
+        }
+
         // 좌표가 있는 경우에만 처리
         if (latitude != null && longitude != null) {
-          final locationKey = '${latitude}_${longitude}';
-          
+          // 정밀도가 높은 좌표를 위한 더 세밀한 그룹화
+          final locationKey =
+              '${latitude.toStringAsFixed(7)}_${longitude.toStringAsFixed(7)}';
+
           if (!locationGroups.containsKey(locationKey)) {
             locationGroups[locationKey] = [];
           }
 
-          locationGroups[locationKey]!.add(Review(
-            id: doc.id,
-            friendName: data['userEmail']?.toString().split('@')[0] ?? 'Unknown',
-            photoUrl: data['imageUrl'] ?? '',
-            timestamp: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-            comment: data['reviewText'] ?? '',
-          ));
+          locationGroups[locationKey]!.add(
+            Review(
+              id: doc.id,
+              friendName:
+                  data['userEmail']?.toString().split('@')[0] ??
+                  data['authorId']?.toString().split('@')[0] ??
+                  'Unknown',
+              photoUrl:
+                  data['photoUrl'] ?? data['imageUrl'] ?? '', // 이미지 URL 필드명 통합
+              timestamp:
+                  (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              comment:
+                  data['text'] ?? data['reviewText'] ?? '', // 리뷰 텍스트 필드명 통합
+            ),
+          );
+        } else {
+          debugPrint('⚠️ GPS 좌표 없음: ${doc.id}');
         }
       }
 
@@ -48,22 +102,34 @@ class MapService {
           final coordinates = key.split('_');
           final latitude = double.parse(coordinates[0]);
           final longitude = double.parse(coordinates[1]);
-          
+
           // 장소 이름은 첫 번째 리뷰의 장소 이름 사용
-          final placeName = reviews.first.comment?.isNotEmpty == true 
-              ? reviews.first.comment!.substring(0, reviews.first.comment!.length > 10 ? 10 : reviews.first.comment!.length)
+          final placeName = reviews.first.comment?.isNotEmpty == true
+              ? reviews.first.comment!.substring(
+                  0,
+                  reviews.first.comment!.length > 10
+                      ? 10
+                      : reviews.first.comment!.length,
+                )
               : '리뷰된 장소';
 
-          locations.add(MapLocation(
-            id: key,
-            name: placeName,
-            latitude: latitude,
-            longitude: longitude,
-            reviews: reviews,
-          ));
+          locations.add(
+            MapLocation(
+              id: key,
+              name: placeName,
+              latitude: latitude,
+              longitude: longitude,
+              reviews: reviews,
+            ),
+          );
+
+          debugPrint(
+            '📍 마커 생성: $placeName (${latitude.toStringAsFixed(7)}, ${longitude.toStringAsFixed(7)}) - ${reviews.length}개 리뷰',
+          );
         }
       });
 
+      debugPrint('📍 총 ${locations.length}개 마커 생성 완료');
       return locations;
     } catch (e) {
       print('Firestore 리뷰 로딩 오류: $e');
@@ -71,7 +137,59 @@ class MapService {
     }
   }
 
-  /// 현재 위치 가져오기
+  /// 기존 문서에 GeoPoint `location` 필드를 백필(마이그레이션)
+  /// - 우선순위: location 있으면 skip → latitudeString/longitudeString → latitude/longitude → loc
+  Future<int> migrateReviewsToGeoPoint() async {
+    int updated = 0;
+    try {
+      final snap = await _firestore.collection('reviews').get();
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        // 이미 location이 있으면 건너뜀
+        if (data.containsKey('location') && data['location'] is GeoPoint) {
+          continue;
+        }
+
+        double? lat;
+        double? lng;
+
+        // 문자열 기반
+        final latStr = data['latitudeString'] as String?;
+        final lngStr = data['longitudeString'] as String?;
+        if (latStr != null && lngStr != null) {
+          lat = double.tryParse(latStr);
+          lng = double.tryParse(lngStr);
+        }
+
+        // number 기반
+        lat ??= (data['latitude'] as num?)?.toDouble();
+        lng ??= (data['longitude'] as num?)?.toDouble();
+
+        // 레거시 loc 기반
+        if (lat == null || lng == null) {
+          final old = data['loc'];
+          if (old is GeoPoint) {
+            lat = old.latitude;
+            lng = old.longitude;
+          }
+        }
+
+        if (lat == null || lng == null) {
+          debugPrint('⚠️ 위치 백필 불가: ${doc.id}');
+          continue;
+        }
+
+        await doc.reference.update({'location': GeoPoint(lat, lng)});
+        updated += 1;
+      }
+      debugPrint('✅ GeoPoint 백필 완료: $updated건 업데이트');
+    } catch (e) {
+      debugPrint('❌ GeoPoint 백필 실패: $e');
+    }
+    return updated;
+  }
+
+  /// 현재 위치 가져오기 (최고 정확도)
   Future<Position?> getCurrentLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -85,13 +203,48 @@ class MapService {
 
       if (permission == LocationPermission.deniedForever) return null;
 
+      // 최고 정확도로 위치 가져오기 (소수점 7자리까지)
       return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        desiredAccuracy: LocationAccuracy.bestForNavigation, // 최고 정확도
+        timeLimit: const Duration(seconds: 15), // 더 긴 대기 시간
+        forceAndroidLocationManager: false, // Android에서 최신 위치 서비스 사용
       );
     } catch (e) {
       print('현재 위치 가져오기 오류: $e');
       return null;
+    }
+  }
+
+  /// 연속 위치 추적 (실시간 업데이트)
+  Stream<Position> getLocationStream() {
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.bestForNavigation, // 최고 정확도
+      distanceFilter: 1, // 1미터마다 업데이트
+      timeLimit: Duration(seconds: 10),
+    );
+
+    return Geolocator.getPositionStream(locationSettings: locationSettings);
+  }
+
+  /// 위치 정확도 정보 반환
+  Future<LocationAccuracyInfo> getLocationAccuracyInfo() async {
+    try {
+      final position = await getCurrentLocation();
+      if (position == null) return LocationAccuracyInfo.unknown();
+
+      return LocationAccuracyInfo(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracy: position.accuracy,
+        altitude: position.altitude,
+        speed: position.speed,
+        heading: position.heading,
+        timestamp: position.timestamp,
+        isMocked: position.isMocked,
+      );
+    } catch (e) {
+      print('위치 정확도 정보 가져오기 오류: $e');
+      return LocationAccuracyInfo.unknown();
     }
   }
 

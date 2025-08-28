@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
 
-/// 지도 위치 정보를 담는 데이터 클래스
+/// 지도에 표시할 위치 정보
 class MapLocation {
   final String id;
   final String name;
   final double latitude;
   final double longitude;
-  final List<Review> reviews; // 여러 리뷰를 저장할 리스트
+  final List<Review> reviews;
 
   MapLocation({
     required this.id,
@@ -30,13 +29,13 @@ class MapLocation {
       : DateTime.now();
 }
 
-/// 리뷰 정보를 담는 데이터 클래스
+/// 리뷰 정보
 class Review {
   final String id;
   final String friendName;
   final String photoUrl;
   final DateTime timestamp;
-  final String? comment; // 리뷰 코멘트 (선택사항)
+  final String? comment;
 
   Review({
     required this.id,
@@ -45,6 +44,78 @@ class Review {
     required this.timestamp,
     this.comment,
   });
+}
+
+/// 위치 정확도 정보 클래스
+class LocationAccuracyInfo {
+  final double latitude;
+  final double longitude;
+  final double accuracy; // 미터 단위
+  final double? altitude;
+  final double? speed;
+  final double? heading;
+  final DateTime timestamp;
+  final bool isMocked;
+
+  LocationAccuracyInfo({
+    required this.latitude,
+    required this.longitude,
+    required this.accuracy,
+    this.altitude,
+    this.speed,
+    this.heading,
+    required this.timestamp,
+    required this.isMocked,
+  });
+
+  /// 알 수 없는 위치 정보
+  factory LocationAccuracyInfo.unknown() {
+    return LocationAccuracyInfo(
+      latitude: 0.0,
+      longitude: 0.0,
+      accuracy: 0.0,
+      timestamp: DateTime.now(),
+      isMocked: false,
+    );
+  }
+
+  /// 위도/경도를 소수점 7자리까지 포맷팅
+  String get formattedLatitude => latitude.toStringAsFixed(7);
+  String get formattedLongitude => longitude.toStringAsFixed(7);
+
+  /// 정확도를 미터 단위로 포맷팅
+  String get formattedAccuracy => '${accuracy.toStringAsFixed(1)}m';
+
+  /// Mock 위치인지 확인
+  bool get isRealLocation => !isMocked;
+
+  /// JSON 변환
+  Map<String, dynamic> toJson() {
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+      'accuracy': accuracy,
+      'altitude': altitude,
+      'speed': speed,
+      'heading': heading,
+      'timestamp': timestamp.toIso8601String(),
+      'isMocked': isMocked,
+    };
+  }
+
+  /// JSON에서 생성
+  factory LocationAccuracyInfo.fromJson(Map<String, dynamic> json) {
+    return LocationAccuracyInfo(
+      latitude: json['latitude'].toDouble(),
+      longitude: json['longitude'].toDouble(),
+      accuracy: json['accuracy'].toDouble(),
+      altitude: json['altitude']?.toDouble(),
+      speed: json['speed']?.toDouble(),
+      heading: json['heading']?.toDouble(),
+      timestamp: DateTime.parse(json['timestamp']),
+      isMocked: json['isMocked'] ?? false,
+    );
+  }
 }
 
 /// 핀 꼬리 그리드 페인터(삼각형 모양)

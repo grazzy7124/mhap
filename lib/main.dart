@@ -14,8 +14,8 @@ import 'services/firebase_service.dart';
 ///
 /// 이 파일은 앱 실행 진입점과 전역 라우팅/테마 설정을 담당합니다.
 /// - MaterialApp의 테마/라우트 초기화
-/// - 스플래시('/' 경로) → 앱 초기화('/startup') → 온보딩/메인 흐름 정의
-/// - Firebase 초기화(AppStartupScreen) 및 온보딩 완료 여부 확인
+/// - 스플래시('/') → Firebase 초기화 → 온보딩/메인 흐름 정의
+/// - Firebase 초기화는 SplashScreen에서 처리
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -47,11 +47,13 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
+
       // 초기 경로를 앱 시작 화면으로 설정 (Firebase 초기화를 위해)
       initialRoute: '/startup',
       // 전역 라우트 테이블
       routes: {
         '/startup': (context) => const AppStartupScreen(),
+
         '/onboarding': (context) => const OnboardingScreen(),
         '/main': (context) => const MainPage(),
         '/friends': (context) => const FriendsManageScreen(),
@@ -103,7 +105,7 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
       } else {
         debugPrint('Firebase 이미 초기화됨');
       }
-      
+
       // Firebase 서비스 초기화
       try {
         await FirebaseService.initialize();
@@ -130,8 +132,9 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
       // Firebase 인증 상태 확인
       final currentUser = FirebaseService.currentUser;
       final prefs = await SharedPreferences.getInstance();
-      final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
-      
+      final onboardingCompleted =
+          prefs.getBool('onboarding_completed') ?? false;
+
       if (!mounted) return;
 
       // Firebase 인증 상태에 따른 분기

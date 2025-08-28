@@ -343,6 +343,57 @@ class GPSRouteGenerator {
       photos: _generateRandomPhotos(pointCount),
     );
   }
+
+  // GPS 정확도 테스트 및 소수점 7자리 지원 확인
+  static Map<String, dynamic> testGPSAccuracy({
+    required double latitude,
+    required double longitude,
+    required double accuracy,
+  }) {
+    // 소수점 7자리까지 정확하게 포맷팅
+    final preciseLat = double.parse(latitude.toStringAsFixed(7));
+    final preciseLng = double.parse(longitude.toStringAsFixed(7));
+
+    // 정확도 계산 (미터 단위)
+    final accuracyMeters = accuracy.toStringAsFixed(1);
+
+    // 위도/경도 1자리당 거리 (대략적)
+    // 위도 1도 ≈ 111km, 경도 1도 ≈ 111km × cos(위도)
+    final lat1DegreeMeters = 111000.0; // 111km
+    final lng1DegreeMeters = 111000.0 * cos(latitude * pi / 180); // 위도에 따른 보정
+
+    // 소수점 7자리 = 1cm 정확도 이론적
+    final theoreticalAccuracy = 0.0000001 * lat1DegreeMeters; // 이론적 정확도
+
+    return {
+      'original': {
+        'latitude': latitude,
+        'longitude': longitude,
+        'accuracy': accuracy,
+      },
+      'precise': {
+        'latitude': preciseLat,
+        'longitude': preciseLng,
+        'formatted': {
+          'latitude': preciseLat.toStringAsFixed(7),
+          'longitude': preciseLng.toStringAsFixed(7),
+        },
+      },
+      'accuracy_info': {
+        'meters': accuracyMeters,
+        'theoretical_cm': (theoreticalAccuracy * 100).toStringAsFixed(2),
+        'decimal_places': 7,
+      },
+      'distance_calculation': {
+        'lat_1_degree_meters': lat1DegreeMeters,
+        'lng_1_degree_meters': lng1DegreeMeters,
+        'lat_7th_decimal_meters': (0.0000001 * lat1DegreeMeters)
+            .toStringAsFixed(6),
+        'lng_7th_decimal_meters': (0.0000001 * lng1DegreeMeters)
+            .toStringAsFixed(6),
+      },
+    };
+  }
 }
 
 // GPS 위치 클래스

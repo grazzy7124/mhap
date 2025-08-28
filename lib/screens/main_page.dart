@@ -93,15 +93,7 @@ class _MainPageState extends State<MainPage> {
           ShoppingScreen(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabSelected,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: '카메라'),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: '지도'),
-          BottomNavigationBarItem(icon: Icon(Icons.store), label: '쇼핑'),
-        ],
-      ),
+      // 하단 네비게이션 바 제거(지도 페이지 커스텀 네비 사용)
     );
   }
 }

@@ -38,18 +38,19 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(          
+        return AlertDialog(
           backgroundColor: Color(0xff000000),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           content: SizedBox(
-            width: 300, height: 350,
+            width: 300,
+            height: 350,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(height: 40,),
+                  SizedBox(height: 40),
                   const Text(
                     '아이콘을 선택하세요!',
                     style: TextStyle(fontSize: 16, color: Colors.white),
@@ -155,57 +156,49 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
 
       // 1. 이미지를 Firebase Storage에 업로드 (오류 방지를 위해 로컬 경로만 사용)
       String imageUrl = '';
-      
+
       // Firebase Storage 오류로 인해 로컬 경로만 사용
       imageUrl = imagePath;
       print('이미지 경로 사용: $imageUrl');
 
-      // 2. 주소를 좌표로 변환 (지도 표시용)
-      double? latitude;
-      double? longitude;
-      if (address != null && address != '위치 정보 없음') {
-        try {
-          List<Location> locations = await locationFromAddress(address);
-          if (locations.isNotEmpty) {
-            latitude = locations.first.latitude;
-            longitude = locations.first.longitude;
-          }
-        } catch (e) {
-          print('주소를 좌표로 변환 실패: $e');
-        }
+      // 카메라에서 전달된 좌표 사용 (필수)
+      final args = ModalRoute.of(context)?.settings.arguments as Map?;
+      final double? latFromCamera = (args?['lat'] as num?)?.toDouble();
+      final double? lngFromCamera = (args?['lng'] as num?)?.toDouble();
+      if (latFromCamera == null || lngFromCamera == null) {
+        throw Exception('촬영 좌표를 찾을 수 없습니다. 카메라에서 위치 권한을 허용했는지 확인하세요.');
       }
 
-      // 3. Firestore에 리뷰 저장 (선택된 아이콘 포함)
-      await _firestore.collection('reviews').add({
+      // 3. Firestore에 리뷰 저장 (GeoPoint만)
+      final Map<String, dynamic> reviewData = {
         'userId': user.uid,
         'userEmail': user.email,
         'placeName': _placeNameController.text.trim(),
-        'address': address ?? '위치 정보 없음',
-        'latitude': latitude,
-        'longitude': longitude,
-        'reviewText': _reviewController.text.trim(),
         'imageUrl': imageUrl,
-        'rating': _selectedRating, // 별점 추가
-        'selectedIcon': selectedIcon ?? 'item1', // 선택된 아이콘 (기본값: item1)
+        'rating': _selectedRating,
+        'selectedIcon': selectedIcon ?? 'item1',
+        'location': GeoPoint(latFromCamera, lngFromCamera),
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
 
-              if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('리뷰가 성공적으로 저장되었습니다!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          
-          // 리뷰 저장 완료 후 메인 페이지의 지도 탭으로 이동
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/main', // 메인 페이지로 이동
-            arguments: {'initialTab': 1}, // 1 = 지도 탭 (0: 카메라, 1: 지도, 2: 쇼핑)
-            (route) => false, // 모든 이전 화면 제거
-          );
-        }
+      await _firestore.collection('reviews').add(reviewData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('리뷰가 성공적으로 저장되었습니다!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // 리뷰 저장 완료 후 메인 페이지의 지도 탭으로 이동
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/main', // 메인 페이지로 이동
+          arguments: {'initialTab': 1}, // 1 = 지도 탭 (0: 카메라, 1: 지도, 2: 쇼핑)
+          (route) => false, // 모든 이전 화면 제거
+        );
+      }
     } catch (e) {
       print('리뷰 저장 오류: $e');
       if (mounted) {
@@ -234,7 +227,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                   as String?
             : null);
 
-    final _starGradient = const LinearGradient(
+    final starGradient = const LinearGradient(
       colors: [
         Color(0xFFDE3397), // 빨강
         Color(0xFFF46061), // 주황
@@ -263,10 +256,10 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
           TextButton(
             onPressed: _isSaving ? null : _pickIcon,
             child: Text(
-              '확인', 
+              '확인',
               style: TextStyle(
-                color: _isSaving ? Colors.grey : Color(0xff007AFF)
-              )
+                color: _isSaving ? Colors.grey : Color(0xff007AFF),
+              ),
             ),
           ),
         ],
@@ -358,7 +351,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                             child: isSelected
                                 ? ShaderMask(
                                     shaderCallback: (bounds) =>
-                                        _starGradient.createShader(
+                                        starGradient.createShader(
                                           Rect.fromLTWH(
                                             0,
                                             0,
