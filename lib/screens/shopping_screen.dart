@@ -28,14 +28,14 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
 
   // 각 아이템의 가격 리스트 (개발자가 직접 수정 가능)
   final List<int> _itemPrices = [
-    30,  // item1 가격
-    15,  // item2 가격
-    20,  // item3 가격
-    35,  // item4 가격
-    70,  // item5 가격
-    20,  // item6 가격
-    50,  // item7 가격
-    30,  // item8 가격
+    30, // item1 가격
+    15, // item2 가격
+    20, // item3 가격
+    35, // item4 가격
+    70, // item5 가격
+    20, // item6 가격
+    50, // item7 가격
+    30, // item8 가격
   ];
 
   // 구매한 아이콘 리스트 (예시)
@@ -102,11 +102,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
   /// 아이템 구매 처리
   Future<void> _purchaseItem(int itemIndex) async {
     final itemPrice = _itemPrices[itemIndex];
-    
+
     if (coin >= itemPrice) {
       final newCoin = coin - itemPrice;
       await _updateUserCoin(newCoin);
-      
+
       // 구매 성공 메시지
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -142,10 +142,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             children: [
               Text('구매하시겠습니까?'),
               SizedBox(height: 10),
-              Container(
-                height: 1, 
-                color: Color(0xff939393),
-              ),
+              Container(height: 1, color: Color(0xff939393)),
               SizedBox(height: 10),
               // 예 버튼
               GestureDetector(
@@ -169,7 +166,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
               ),
               SizedBox(height: 6),
               Container(
-                height: 1, 
+                height: 1,
                 width: MediaQuery.of(context).size.width * 0.6, // 명시적 너비 설정
                 color: Color(0xff939393),
               ),
@@ -225,11 +222,12 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
         leading: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(width: 19.05,),
+            SizedBox(width: 19.05),
             GestureDetector(
               child: Image.asset(
                 'assets/images/arrow_left.png',
-                width: 18.89, height: 17.44,
+                width: 18.89,
+                height: 17.44,
               ),
               onTap: () {
                 // PageView에서 지도 탭(인덱스 1)으로 이동
@@ -246,14 +244,10 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
         elevation: 0,
         title: Column(
           children: [
-            SizedBox(height: 20,),
-            Image.asset(
-              'assets/images/icon_shop.png'
-            ),
-            SizedBox(height: 16,),
-            Image.asset(
-              'assets/images/appbar_underline.png'
-            )
+            SizedBox(height: 20),
+            Image.asset('assets/images/icon_shop.png'),
+            SizedBox(height: 16),
+            Image.asset('assets/images/appbar_underline.png'),
           ],
         ),
         actions: [
@@ -261,22 +255,36 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             stream: _getUserCoinStream(),
             builder: (context, snapshot) {
               final currentCoin = snapshot.data ?? coin;
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              return Column(
                 children: [
-                  SizedBox(width: 5,),
-                  Image.asset(
-                    'assets/images/coin.png',
-                    width: 22, height: 18,
-                  ),
-                  SizedBox(width: 5,),
-                  Text(
-                    '${currentCoin}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(width: 5),
+                      Image.asset('assets/images/coin.png', width: 22, height: 18),
+                      SizedBox(width: 5),
+                      ShaderMask(
+                        shaderCallback: (Rect bounds) {
+                          return const LinearGradient(
+                            colors: [
+                              Color(0xFFDE3397), // 빨간색 계열
+                              Color(0xFFF46061), // 주황색 계열
+                              Color(0xFFFEA440), // 노란색 계열
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds);
+                        },
+                        child: Text(
+                          '${currentCoin}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               );
@@ -329,7 +337,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                       return Container(
                         color: Colors.grey.shade800,
                         child: const Center(
-                          child: Icon(Icons.error, color: Colors.red, size: 40.0),
+                          child: Icon(
+                            Icons.error,
+                            color: Colors.red,
+                            size: 40.0,
+                          ),
                         ),
                       );
                     },
@@ -346,19 +358,20 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                   ),
                   child: Row(
                     children: [
-                      SizedBox(width: 5,),
+                      SizedBox(width: 5),
                       Image.asset(
                         'assets/images/coin.png',
-                        width: 22, height: 18,
+                        width: 22,
+                        height: 18,
                       ),
-                      SizedBox(width: 5,),
+                      SizedBox(width: 5),
                       ShaderMask(
                         shaderCallback: (Rect bounds) {
                           return const LinearGradient(
                             colors: [
-                              Color(0xFFFF6B6B),  // 빨간색 계열
-                              Color(0xFFFF8E53),  // 주황색 계열
-                              Color(0xFFFFD93D),  // 노란색 계열
+                              Color(0xFFDE3397), // 빨간색 계열
+                              Color(0xFFF46061), // 주황색 계열
+                              Color(0xFFFEA440), // 노란색 계열
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
