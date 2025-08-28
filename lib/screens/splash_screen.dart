@@ -140,119 +140,91 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.green,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.green.shade600, Colors.green.shade400],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // 앱 아이콘 (더 크고 눈에 띄게)
-                Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 30,
-                        offset: const Offset(0, 15),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.location_on,
-                    size: 90,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 40),
-
-                // 앱 이름 (더 크고 굵게)
-                const Text(
-                  'Whatapp',
-                  style: TextStyle(
-                    fontSize: 42,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 2.0,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black26,
-                        offset: Offset(0, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // 부제목 (더 명확하게)
-                const Text(
-                  '여행의 모든 순간을 기록하세요',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 60),
-
-                // 로딩 인디케이터 (더 크게)
-                const SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    strokeWidth: 4,
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // 상태 메시지 (더 명확하게)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _statusText,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // 타이머 표시 (선택사항)
-                Text(
-                  '잠시만 기다려주세요...',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.8),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            SizedBox(height: 149),
+            Image.asset(
+              'assets/images/login_icon.png',
+              width: 60.55,
             ),
-          ),
+            const SizedBox(height: 40),
+
+            // 앱 이름
+            const Text(
+              'Whatapp',
+              style: TextStyle(
+                fontSize: 42,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 2.0,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    offset: Offset(0, 2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 부제목
+            const Text(
+              '여행의 모든 순간을 기록하세요',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 60),
+
+            // 로딩 인디케이터
+            const SizedBox(
+              width: 50,
+              height: 50,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 4,
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // 상태 메시지
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _statusText,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            // 타이머 표시
+            Text(
+              '잠시만 기다려주세요...',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.8),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
         ),
       ),
     );

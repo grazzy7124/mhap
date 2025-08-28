@@ -160,16 +160,6 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             'coin': coin - itemPrice,
           });
 
-<<<<<<< HEAD
-      // 구매 성공 메시지
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('아이템을 구매했습니다! ($itemPrice코인 차감)'),
-            backgroundColor: Colors.green,
-          ),
-        );
-=======
           // 로컬 상태 업데이트
           setState(() {
             _purchasedItemIndexes = newPurchasedItems;
@@ -196,7 +186,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             ),
           );
         }
->>>>>>> dbe0374290c10e1e1023d4300805b8fa146b1b26
+
       }
     } else {
       // 코인 부족 메시지
@@ -378,43 +368,6 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
           ),
         ],
       ),
-<<<<<<< HEAD
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // 2열 그리드
-                crossAxisSpacing: 16.0, // 가로 간격
-                mainAxisSpacing: 16.0, // 세로 간격
-                childAspectRatio: 1.0, // 정사각형 비율
-              ),
-              itemCount: _imageAssets.length,
-              itemBuilder: (context, index) {
-                return _buildImageItem(_imageAssets[index], index);
-              },
-            ),
-          ),
-
-          // 우측 스와이프 제스처로 맵 이동
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onHorizontalDragEnd: (details) {
-                if (details.primaryVelocity != null &&
-                    details.primaryVelocity! > 400) {
-                  Navigator.pushReplacementNamed(
-                    context,
-                    '/main',
-                    arguments: {'initialTab': 1},
-                  );
-                }
-              },
-            ),
-          ),
-        ],
-=======
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: _getAvailableItems().isEmpty
@@ -432,7 +385,6 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                   return _buildImageItem(availableItem['imageAsset'], availableItem['originalIndex']);
                 },
               ),
->>>>>>> dbe0374290c10e1e1023d4300805b8fa146b1b26
       ),
     );
   }

@@ -118,68 +118,54 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     // UI 구성: 배경 + 폼 + 행동 버튼들
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xff000000),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 24),
-              const Text(
-                'Whatapp',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                _isLoginMode ? '로그인' : '회원가입',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-
-              // 입력 폼
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: _isLoading ? null : _handleGoogleSignIn,
-                      child: Container(
-                        width: 278,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Color(0xffF0F0F0),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(width: 8),
-                            Image.asset('assets/images/google.png', width: 27),
-                            SizedBox(width: 46),
-                            Text(_isLoading ? '처리 중...' : '구글 계정으로 로그인'),
-                          ],
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 149),
+                Image.asset(
+                  'assets/images/login_icon.png',
+                  width: 60.55,
+                ),
+                Image.asset(
+                  'assets/images/Mhap.png',
+                  width: 100
+                ),
+                SizedBox(height: 100,),
+            
+                // 입력 폼
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: _isLoading ? null : _handleGoogleSignIn,
+                        child: Container(
+                          width: 278,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Color(0xffF0F0F0),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Image.asset('assets/images/google.png', width: 27),
+                              SizedBox(width: 46),
+                              Text(_isLoading ? '처리 중...' : '구글 계정으로 로그인'),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              const SizedBox(height: 8),
-
-              // 모드 전환 텍스트 버튼
-              TextButton(
-                onPressed: _toggleMode,
-                child: Text(
-                  _isLoginMode ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인',
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
