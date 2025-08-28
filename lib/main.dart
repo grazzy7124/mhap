@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
+import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_page.dart';
 import 'screens/friends_manage_screen.dart';
@@ -14,8 +15,8 @@ import 'services/firebase_service.dart';
 ///
 /// 이 파일은 앱 실행 진입점과 전역 라우팅/테마 설정을 담당합니다.
 /// - MaterialApp의 테마/라우트 초기화
-/// - 스플래시('/' 경로) → 앱 초기화('/startup') → 온보딩/메인 흐름 정의
-/// - Firebase 초기화(AppStartupScreen) 및 온보딩 완료 여부 확인
+/// - 스플래시('/') → Firebase 초기화 → 온보딩/메인 흐름 정의
+/// - Firebase 초기화는 SplashScreen에서 처리
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -47,12 +48,11 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      // 초기 경로를 온보딩 화면으로 설정
+      // 초기 경로를 스플래시 화면으로 설정 (Firebase 초기화를 위해)
       initialRoute: '/',
       // 전역 라우트 테이블
       routes: {
-        '/': (context) => const OnboardingScreen(),
-        '/startup': (context) => const AppStartupScreen(),
+        '/': (context) => const SplashScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/main': (context) => const MainPage(),
         '/friends': (context) => const FriendsManageScreen(),
@@ -68,155 +68,6 @@ class MyApp extends StatelessWidget {
           return ReviewFormScreen(initialImagePath: imagePath);
         },
       },
-    );
-  }
-}
-
-/// 앱 시작 화면(AppStartupScreen)
-///
-/// 역할:
-/// - Firebase를 1회만 초기화(중복 방지)
-/// - SharedPreferences로 온보딩 완료 여부 확인
-/// - 결과에 따라 온보딩('/onboarding') 또는 메인('/main')으로 이동
-class AppStartupScreen extends StatefulWidget {
-  const AppStartupScreen({super.key});
-
-  @override
-  State<AppStartupScreen> createState() => _AppStartupScreenState();
-}
-
-class _AppStartupScreenState extends State<AppStartupScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _initializeApp();
-  }
-
-  /// Firebase 초기화 + 온보딩 여부 확인
-  Future<void> _initializeApp() async {
-    try {
-      // Firebase 초기화 (중복 방지)
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-        // Firebase 서비스 초기화
-        await FirebaseService.initialize();
-      } else {
-        // 이미 초기화된 경우 Firebase 서비스만 초기화
-        try {
-          await FirebaseService.initialize();
-        } catch (e) {
-          debugPrint('Firebase 서비스 초기화 오류: $e');
-        }
-      }
-
-      if (mounted) {
-        await _checkOnboardingStatus();
-      }
-    } catch (e) {
-      debugPrint('앱 초기화 오류: $e');
-      // 초기화 실패 시 온보딩으로 폴백
-      if (mounted) {
-        _navigateToOnboarding();
-      }
-    }
-  }
-
-  /// 온보딩 완료 여부 확인 후 분기 이동
-  Future<void> _checkOnboardingStatus() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final onboardingCompleted =
-          prefs.getBool('onboarding_completed') ?? false;
-      if (!mounted) return;
-
-      // 3초 후에도 확인이 안 되면 강제로 온보딩으로 이동
-      await Future.delayed(const Duration(seconds: 3));
-      if (!mounted) return;
-
-      if (onboardingCompleted) {
-        _navigateToMainPage();
-      } else {
-        _navigateToOnboarding();
-      }
-    } catch (e) {
-      debugPrint('온보딩 상태 확인 오류: $e');
-      // 오류 시 온보딩으로 이동
-      if (mounted) {
-        _navigateToOnboarding();
-      }
-    }
-  }
-
-  /// 메인 페이지로 이동
-  void _navigateToMainPage() {
-    Navigator.pushReplacementNamed(
-      context,
-      '/main',
-      arguments: {'initialTab': 1}, // 1 = 지도 탭 (0: 카메라, 1: 지도, 2: 쇼핑)
-    );
-  }
-
-  /// 온보딩으로 이동
-  void _navigateToOnboarding() {
-    Navigator.pushReplacementNamed(context, '/onboarding');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // 초기화 진행 중 간단한 로딩 화면 표시
-    return Scaffold(
-      backgroundColor: Colors.green,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.location_on, size: 80, color: Colors.white),
-            SizedBox(height: 24),
-            Text(
-              'Whatapp',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(height: 16),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-            SizedBox(height: 24),
-            Text(
-              '앱을 초기화하는 중...',
-              style: TextStyle(fontSize: 16, color: Colors.white70),
-            ),
-            SizedBox(height: 32),
-            // 수동 이동 버튼들
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _navigateToOnboarding,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.green,
-                  ),
-                  child: Text('온보딩으로 이동'),
-                ),
-                ElevatedButton(
-                  onPressed: _navigateToMainPage,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.green,
-                  ),
-                  child: Text('메인으로 이동'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
