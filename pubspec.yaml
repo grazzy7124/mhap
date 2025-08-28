@@ -65,6 +65,9 @@ dependencies:
   # 로컬 저장소
   shared_preferences: ^2.2.2
   
+  # HTTP 요청
+  http: ^1.1.0
+  
   # 애니메이션
   lottie: ^2.6.0
   

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
-import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_page.dart';
 import 'screens/friends_manage_screen.dart';
@@ -48,11 +47,11 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      // 초기 경로를 스플래시 화면으로 설정
+      // 초기 경로를 온보딩 화면으로 설정
       initialRoute: '/',
       // 전역 라우트 테이블
       routes: {
-        '/': (context) => const SplashScreen(),
+        '/': (context) => const OnboardingScreen(),
         '/startup': (context) => const AppStartupScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/main': (context) => const MainPage(),

@@ -28,7 +28,7 @@ class FirebaseService {
       debugPrint('Firebase already initialized, skipping...');
       return;
     }
-    
+
     await Firebase.initializeApp(options: options);
     // Web 환경에서 리다이렉트 세션 저장 문제 방지: LOCAL 지속성 사용
     if (kIsWeb) {
@@ -54,15 +54,6 @@ class FirebaseService {
       // Firebase Auth의 GoogleAuthProvider로 직접 로그인
       final googleProvider = GoogleAuthProvider();
       googleProvider.setCustomParameters({'prompt': 'select_account'});
-
-      // iOS 전용 설정
-      if (Platform.isIOS) {
-        googleProvider.setCustomParameters({
-          'prompt': 'select_account',
-          'ios_client_id':
-              '1038389858842-fao3nue9kkrtiismvo70sr950a1p9t49.apps.googleusercontent.com',
-        });
-      }
 
       // Web에서는 리다이렉트 대신 팝업 사용하여 sessionStorage 문제 회피
       final UserCredential userCred = kIsWeb
@@ -112,6 +103,4 @@ class FirebaseService {
       }, SetOptions(merge: true));
     }
   }
-
-
 }
