@@ -38,6 +38,9 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
     30, // item8 가격
   ];
 
+  // 구매한 아이템 인덱스 목록 (Firebase에서 로드)
+  List<int> _purchasedItemIndexes = [];
+
   // 구매한 아이콘 리스트 (예시)
   final List<String> _purchasedIcons = [
     'assets/images/icon1.png',
@@ -49,6 +52,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
   void initState() {
     super.initState();
     _loadUserCoin();
+    _loadPurchasedItems();
   }
 
   /// 사용자의 coin 정보를 Firebase에서 로드
@@ -68,6 +72,27 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
       }
     } catch (e) {
       print('Coin 로드 오류: $e');
+    }
+  }
+
+  /// 사용자가 구매한 아이템 목록을 Firebase에서 로드
+  Future<void> _loadPurchasedItems() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+          final data = doc.data();
+          if (data != null && data['purchasedItems'] != null) {
+            final List<dynamic> purchasedItems = data['purchasedItems'];
+            setState(() {
+              _purchasedItemIndexes = purchasedItems.cast<int>();
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('구매한 아이템 로드 오류: $e');
     }
   }
 
@@ -99,22 +124,68 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
     }
   }
 
+  /// 구매 가능한 아이템 목록을 반환 (구매한 아이템 제외)
+  List<Map<String, dynamic>> _getAvailableItems() {
+    List<Map<String, dynamic>> availableItems = [];
+    
+    for (int i = 0; i < _imageAssets.length; i++) {
+      if (!_purchasedItemIndexes.contains(i)) {
+        availableItems.add({
+          'imageAsset': _imageAssets[i],
+          'originalIndex': i,
+        });
+      }
+    }
+    
+    return availableItems;
+  }
+
   /// 아이템 구매 처리
   Future<void> _purchaseItem(int itemIndex) async {
     final itemPrice = _itemPrices[itemIndex];
 
     if (coin >= itemPrice) {
-      final newCoin = coin - itemPrice;
-      await _updateUserCoin(newCoin);
+      try {
+        final user = _auth.currentUser;
+        if (user != null) {
+          // 구매한 아이템을 Firebase에 추가
+          final newPurchasedItems = List<int>.from(_purchasedItemIndexes);
+          if (!newPurchasedItems.contains(itemIndex)) {
+            newPurchasedItems.add(itemIndex);
+          }
+          
+          // Firebase에 구매한 아이템 목록과 코인 업데이트
+          await _firestore.collection('users').doc(user.uid).update({
+            'purchasedItems': newPurchasedItems,
+            'coin': coin - itemPrice,
+          });
 
-      // 구매 성공 메시지
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('아이템을 구매했습니다! (${itemPrice}코인 차감)'),
-            backgroundColor: Colors.green,
-          ),
-        );
+          // 로컬 상태 업데이트
+          setState(() {
+            _purchasedItemIndexes = newPurchasedItems;
+            coin = coin - itemPrice;
+          });
+
+          // 구매 성공 메시지
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('아이템을 구매했습니다! (${itemPrice}코인 차감)'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        print('아이템 구매 오류: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('구매 처리 중 오류가 발생했습니다: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } else {
       // 코인 부족 메시지
@@ -294,18 +365,21 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // 2열 그리드
-            crossAxisSpacing: 16.0, // 가로 간격
-            mainAxisSpacing: 16.0, // 세로 간격
-            childAspectRatio: 1.0, // 정사각형 비율
-          ),
-          itemCount: _imageAssets.length,
-          itemBuilder: (context, index) {
-            return _buildImageItem(_imageAssets[index], index);
-          },
-        ),
+        child: _getAvailableItems().isEmpty
+            ? _buildEmptyState()
+            : GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, // 2열 그리드
+                  crossAxisSpacing: 16.0, // 가로 간격
+                  mainAxisSpacing: 16.0, // 세로 간격
+                  childAspectRatio: 1.0, // 정사각형 비율
+                ),
+                itemCount: _getAvailableItems().length,
+                itemBuilder: (context, index) {
+                  final availableItem = _getAvailableItems()[index];
+                  return _buildImageItem(availableItem['imageAsset'], availableItem['originalIndex']);
+                },
+              ),
       ),
     );
   }
@@ -420,6 +494,40 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// 모든 아이템을 구매했을 때 표시할 빈 상태 위젯
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.shopping_bag,
+            size: 80,
+            color: Colors.grey.shade600,
+          ),
+          SizedBox(height: 24),
+          Text(
+            '모든 아이템을 구매했습니다!',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            '새로운 아이템이 추가될 때까지 기다려주세요.',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade400,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
