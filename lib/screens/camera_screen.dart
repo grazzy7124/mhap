@@ -476,7 +476,7 @@ class _CameraScreenState extends State<CameraScreen> {
             children: [
               // 상단 툴바
               Container(
-                padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
+                padding: const EdgeInsets.only(top: 120, left: 20, right: 20),
               ),
 
               // 카메라 프리뷰 영역
@@ -487,7 +487,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     color: Colors.black,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      // color: Colors.white.withOpacity(0.3),s
                       width: 2,
                     ),
                   ),
@@ -502,7 +502,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                 onTap: _isLoading ? null : _takePhoto,
                                 child: Center(
                                   child: AspectRatio(
-                                    aspectRatio: 4 / 3,
+                                    aspectRatio: 1,
                                     child: Stack(
                                       fit: StackFit.expand,
                                       children: [

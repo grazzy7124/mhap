@@ -152,6 +152,16 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                   as String?
             : null);
 
+    final _starGradient = const LinearGradient(
+      colors: [
+        Color(0xFFDE3397), // 빨강
+        Color(0xFFF46061), // 주황
+        Color(0xFFFEA440), // 노랑
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -163,7 +173,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
               onTap: () {
                 Navigator.of(context).pop();
               },
-              child: Image.asset('assets/images/Vector.png', width: 18.89)
+              child: Image.asset('assets/images/Vector.png', width: 18.89),
             ),
           ],
         ),
@@ -181,7 +191,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
           children: [
             // 1) 상단 이미지 미리보기
             AspectRatio(
-              aspectRatio: 4 / 3,
+              aspectRatio: 1,
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
@@ -197,11 +207,12 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
             Padding(
               padding: EdgeInsets.only(left: 16, right: 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // 2) 주소 표시 (카메라에서 전달받은 주소)
                   Container(
-                    width: 290, height: 45,
+                    width: 290,
+                    height: 45,
                     padding: const EdgeInsets.only(left: 15, right: 15),
                     decoration: BoxDecoration(
                       color: Color(0xffD9D9D9),
@@ -209,10 +220,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                     ),
                     child: Row(
                       children: [
-                        Image.asset(
-                          'assets/images/map_icon.png',
-                          width: 21,
-                        ),
+                        Image.asset('assets/images/map_icon.png', width: 21),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -241,20 +249,17 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                     controller: _placeNameController,
                     decoration: InputDecoration(
                       hintText: '나만의 장소 이름을 입력하세요!',
-                      hintStyle: TextStyle(
-                        color: Color(0xffBBBBBB)
-                      ),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide.none,
-                      ),
+                      hintStyle: TextStyle(color: Color(0xffBBBBBB)),
+                      border: OutlineInputBorder(borderSide: BorderSide.none),
                     ),
                   ),
                   // 4) 별점 선택
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: List.generate(5, (index) {
+                      final isSelected = index < _selectedRating;
                       return Padding(
-                        padding: const EdgeInsets.only(left: 5),
+                        padding: const EdgeInsets.only(left: 7),
                         child: GestureDetector(
                           onTap: () {
                             setState(() {
@@ -263,11 +268,29 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 0),
-                            child: Icon(
-                              Icons.star_rounded,
-                              size: 26,
-                              color: index < _selectedRating ? Colors.black : const Color(0xFFF2F2F7),
-                            ),
+                            child: isSelected
+                                ? ShaderMask(
+                                    shaderCallback: (bounds) =>
+                                        _starGradient.createShader(
+                                          Rect.fromLTWH(
+                                            0,
+                                            0,
+                                            bounds.width,
+                                            bounds.height,
+                                          ),
+                                        ),
+                                    child: const Icon(
+                                      Icons.star_rounded,
+                                      size: 26,
+                                      color: Colors
+                                          .white, // ShaderMask가 이 색을 그라데이션으로 덮어씌움
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.star_rounded,
+                                    size: 26,
+                                    color: Color(0xFFF2F2F7),
+                                  ),
                           ),
                         ),
                       );
@@ -279,9 +302,7 @@ class _ReviewFormScreenState extends State<ReviewFormScreen> {
                     maxLines: 8,
                     decoration: InputDecoration(
                       hintText: '내용 입력',
-                      hintStyle: TextStyle(
-                        color: Color(0xffD2D2D2)
-                      ),
+                      hintStyle: TextStyle(color: Color(0xffD2D2D2)),
                       border: OutlineInputBorder(
                         borderSide: BorderSide.none,
                         borderRadius: BorderRadius.circular(8),
