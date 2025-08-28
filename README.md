@@ -149,17 +149,6 @@ static Future<UserCredential> signInWithGoogle() async {
   return await auth.signInWithProvider(googleProvider);
 }
 ```
-
-### **Apple 로그인**
-```dart
-// Apple ID를 통한 로그인 (iOS/macOS)
-static Future<UserCredential> signInWithApple() async {
-  final rawNonce = _generateNonce();
-  final nonce = _sha256ofString(rawNonce);
-  // Apple 로그인 구현
-}
-```
-
 ## 🗺️ **지도 기능**
 
 ### **Google Maps 통합**
