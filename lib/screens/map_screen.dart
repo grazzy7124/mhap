@@ -911,9 +911,7 @@ class _MapScreenState extends State<MapScreen> {
               image: Image.asset('assets/images/settings.png'),
               tooltip: '설정',
               onTap: () {
-                Navigator.of(
-                  context,
-                ).pushReplacementNamed('/friends-manage'); // 임시 설정
+                Navigator.of(context).pushNamed('/settings'); // 설정 페이지로 이동
                 setState(() => _navExpanded = false);
               },
             ),
