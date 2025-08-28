@@ -41,6 +41,8 @@ class _CameraScreenState extends State<CameraScreen> {
   
   // 촬영 시 화면 플래시 효과
   bool _showCaptureFlash = false;
+  
+
 
   @override
   void initState() {
@@ -68,6 +70,11 @@ class _CameraScreenState extends State<CameraScreen> {
       );
       _cameraController = controller;
       _initializeControllerFuture = controller.initialize();
+      
+      // 카메라 초기화 완료 후 기본 플래시 모드 설정
+      await _initializeControllerFuture;
+      await controller.setFlashMode(FlashMode.off);
+      
       if (mounted) setState(() {});
     } catch (e) {
       debugPrint('카메라 초기화 실패: $e');
@@ -327,14 +334,35 @@ class _CameraScreenState extends State<CameraScreen> {
   /// 플래시를 토글하는 메서드
   ///
   /// 카메라의 플래시를 켜거나 끕니다.
-  /// 현재는 TODO 상태이며, 실제 카메라 플래시 제어 기능을 구현할 예정입니다.
-  void _toggleFlash() {
-    setState(() {
-      _isFlashOn = !_isFlashOn;
-    });
+  /// 켜져있으면 사진 촬영 시에만 플래시가 작동합니다.
+  Future<void> _toggleFlash() async {
+    if (_cameraController == null || _initializeControllerFuture == null) {
+      print('카메라 컨트롤러가 준비되지 않았습니다.');
+      return;
+    }
 
-    // TODO: 실제 카메라 플래시 제어 구현
-    print('플래시 ${_isFlashOn ? "켜짐" : "꺼짐"}');
+    try {
+      // 카메라 초기화 완료까지 기다리기
+      await _initializeControllerFuture;
+      
+      // 플래시 상태 토글
+      setState(() {
+        _isFlashOn = !_isFlashOn;
+      });
+      
+      // 카메라 컨트롤러에 플래시 모드 설정
+      await _cameraController!.setFlashMode(
+        _isFlashOn ? FlashMode.auto : FlashMode.off
+      );
+      
+      print('플래시 ${_isFlashOn ? "켜짐 (자동 모드 - 촬영 시 필요시 작동)" : "꺼짐"}');
+    } catch (e) {
+      print('플래시 설정 오류: $e');
+      // 오류 발생 시 상태 되돌리기
+      setState(() {
+        _isFlashOn = !_isFlashOn;
+      });
+    }
   }
 
   /// 카메라 전환 메서드
@@ -562,17 +590,24 @@ class _CameraScreenState extends State<CameraScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // 갤러리 버튼
+                    // 플래시 버튼
                     Container(
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      child: IconButton(
-                        icon: Image.asset('assets/images/gallery.png'),
-                        onPressed: _isLoading ? null : _pickFromGallery,
-                      ),
+                                             child: IconButton(
+                         icon: Image.asset(
+                           _isFlashOn 
+                             ? 'assets/images/flash_filled.png' 
+                             : 'assets/images/flash.png',
+                             width: 20, height: 24,
+                         ),
+                                                 onPressed: _isLoading ? null : () async {
+                          await _toggleFlash();
+                        },
+                       ),
                     ),
 
                     // 촬영 버튼
