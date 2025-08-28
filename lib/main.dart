@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
+import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_page.dart';
 import 'screens/friends_manage_screen.dart';
@@ -47,15 +48,16 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      // 초기 경로를 앱 시작 화면으로 설정 (스플래시 건너뛰기)
-      initialRoute: '/startup',
+      // 초기 경로를 스플래시 화면으로 설정
+      initialRoute: '/',
       // 전역 라우트 테이블
       routes: {
-        '/': (context) => const AppStartupScreen(),
+        '/': (context) => const SplashScreen(),
         '/startup': (context) => const AppStartupScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/main': (context) => const MainPage(),
         '/friends': (context) => const FriendsManageScreen(),
+        '/friends-manage': (context) => const FriendsManageScreen(),
         '/shopping': (context) => const ShoppingScreen(),
         '/upload': (context) => const UploadScreen(),
         '/review': (context) {
@@ -94,15 +96,25 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
   /// Firebase 초기화 + 온보딩 여부 확인
   Future<void> _initializeApp() async {
     try {
-      // Firebase 초기화 (이미 존재하면 생략)
+      // Firebase 초기화 (중복 방지)
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
         // Firebase 서비스 초기화
         await FirebaseService.initialize();
+      } else {
+        // 이미 초기화된 경우 Firebase 서비스만 초기화
+        try {
+          await FirebaseService.initialize();
+        } catch (e) {
+          debugPrint('Firebase 서비스 초기화 오류: $e');
+        }
       }
-      await _checkOnboardingStatus();
+
+      if (mounted) {
+        await _checkOnboardingStatus();
+      }
     } catch (e) {
       debugPrint('앱 초기화 오류: $e');
       // 초기화 실패 시 온보딩으로 폴백
