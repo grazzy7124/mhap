@@ -502,7 +502,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                 onTap: _isLoading ? null : _takePhoto,
                                 child: Center(
                                   child: AspectRatio(
-                                    aspectRatio: 4 / 3,
+                                    aspectRatio: 1,
                                     child: Stack(
                                       fit: StackFit.expand,
                                       children: [
