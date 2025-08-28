@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:whatapp/screens/settings_screen.dart';
 import 'firebase_options.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_page.dart';
@@ -53,7 +54,7 @@ class MyApp extends StatelessWidget {
       // 전역 라우트 테이블
       routes: {
         '/startup': (context) => const AppStartupScreen(),
-
+        '/settings': (context) => const SettingsScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/main': (context) => const MainPage(),
         '/friends': (context) => const FriendsManageScreen(),
