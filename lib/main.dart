@@ -14,8 +14,8 @@ import 'services/firebase_service.dart';
 ///
 /// 이 파일은 앱 실행 진입점과 전역 라우팅/테마 설정을 담당합니다.
 /// - MaterialApp의 테마/라우트 초기화
-/// - 스플래시('/') → Firebase 초기화 → 온보딩/메인 흐름 정의
-/// - Firebase 초기화는 SplashScreen에서 처리
+/// - AppStartupScreen → Firebase 초기화 → 온보딩/메인 흐름 정의
+/// - Firebase 초기화는 AppStartupScreen에서 처리
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -185,32 +185,94 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
   Widget build(BuildContext context) {
     // 초기화 진행 중 간단한 로딩 화면 표시
     return Scaffold(
-      backgroundColor: Colors.green,
-      body: Center(
+      backgroundColor: Colors.black,
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.location_on, size: 80, color: Colors.white),
-            SizedBox(height: 24),
-            Text(
+            SizedBox(height: 149),
+            Image.asset(
+              'assets/images/login_icon.png',
+              width: 60.55,
+            ),
+            const SizedBox(height: 40),
+
+            // 앱 이름
+            const Text(
               'Whatapp',
               style: TextStyle(
-                fontSize: 32,
+                fontSize: 42,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
+                letterSpacing: 2.0,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    offset: Offset(0, 2),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 16),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            const SizedBox(height: 12),
+
+            // 부제목
+            const Text(
+              '여행의 모든 순간을 기록하세요',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 60),
+
+            // 로딩 인디케이터
+            const SizedBox(
+              width: 50,
+              height: 50,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 4,
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // 상태 메시지
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                '앱을 초기화하는 중...',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            // 타이머 표시
             Text(
-              '앱을 초기화하는 중...',
-              style: TextStyle(fontSize: 16, color: Colors.white70),
+              '잠시만 기다려주세요...',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.8),
+                fontStyle: FontStyle.italic,
+              ),
             ),
-            SizedBox(height: 32),
-            // 수동 이동 버튼들
+
+            const SizedBox(height: 32),
+            
+            // 수동 이동 버튼들 (디버그용)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -218,17 +280,17 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
                   onPressed: _navigateToOnboarding,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: Colors.green,
+                    foregroundColor: Colors.black,
                   ),
-                  child: Text('온보딩으로 이동'),
+                  child: const Text('온보딩으로 이동'),
                 ),
                 ElevatedButton(
                   onPressed: _navigateToMainPage,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: Colors.green,
+                    foregroundColor: Colors.black,
                   ),
-                  child: Text('메인으로 이동'),
+                  child: const Text('메인으로 이동'),
                 ),
               ],
             ),
