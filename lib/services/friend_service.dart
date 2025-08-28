@@ -16,7 +16,8 @@ class FriendService {
       _fs.collection('friendRequests');
 
   // friendships pairId 계산
-  String _pairId(String a, String b) => (a.compareTo(b) < 0) ? '${a}_${b}' : '${b}_${a}';
+  String _pairId(String a, String b) =>
+      (a.compareTo(b) < 0) ? '${a}_$b' : '${b}_$a';
 
   /// 친구 요청 보내기
   Future<void> sendFriendRequest(String toUid) async {
@@ -127,10 +128,12 @@ class FriendService {
       final snap = await tx.get(ref);
       if (!snap.exists) return;
       tx.delete(ref);
-      tx.update(_fs.collection('users').doc(_uid),
-          {'friendCount': FieldValue.increment(-1)});
-      tx.update(_fs.collection('users').doc(otherUid),
-          {'friendCount': FieldValue.increment(-1)});
+      tx.update(_fs.collection('users').doc(_uid), {
+        'friendCount': FieldValue.increment(-1),
+      });
+      tx.update(_fs.collection('users').doc(otherUid), {
+        'friendCount': FieldValue.increment(-1),
+      });
     });
   }
 

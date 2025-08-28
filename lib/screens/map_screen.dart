@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/map_models.dart';
 import '../services/map_service.dart';
 import '../widgets/map_widgets.dart';
@@ -34,15 +30,19 @@ class _MapScreenState extends State<MapScreen> {
   // 현재 위치 관련 상태
   Position? _currentPosition; // 현재 GPS 위치
   bool _isLocationLoading = false; // 위치 로딩 상태
+  // 사용자 화살표 마커 상태
+  BitmapDescriptor? _userArrowIcon;
+  double _userHeadingDeg = 0.0; // 회전 각도(도)
+  final double _userProgress = 0.5; // 0.0~1.0 색상 그라데이션 진행도
 
   // 커스텀 마커 이미지들
-  Map<String, BitmapDescriptor> _customMarkers = {};
-  Map<String, GlobalKey> _markerKeys = {}; // 마커 위젯의 키를 저장할 맵
+  final Map<String, BitmapDescriptor> _customMarkers = {};
+  final Map<String, GlobalKey> _markerKeys = {}; // 마커 위젯의 키를 저장할 맵
 
   // Firestore 관련 상태
   final MapService _mapService = MapService();
   List<MapLocation> _firestoreLocations = []; // Firestore에서 가져온 리뷰 위치들
-  bool _isLoadingReviews = false;
+  // Firestore 로딩 플래그는 사용하지 않아 제거
 
   // 더미 데이터 (Firestore에 데이터가 없을 때 사용)
   final List<MapLocation> _dummyLocations = [
@@ -211,7 +211,7 @@ class _MapScreenState extends State<MapScreen> {
   ];
 
   // 지도 설정: 초기 카메라 위치(포항)
-  CameraPosition _initialCameraPosition = const CameraPosition(
+  final CameraPosition _initialCameraPosition = const CameraPosition(
     target: LatLng(36.081489, 129.395523), // 포항 시내 중심
     zoom: 13.0,
   );
@@ -220,28 +220,45 @@ class _MapScreenState extends State<MapScreen> {
   String _selectedFriend = 'all'; // 'all'은 전체
   final List<String> _friends = ['all', '기노은', '권하민', '정태주', '박예은', '이찬민'];
 
+  // 하단 네비게이션(아이콘만) - 항상 표시
+  bool _navExpanded = false;
   // 하단 네비게이션 토글 상태
-  bool _showBottomNavigation = false;
-
+  // 하단 네비게이션 토글 상태
   @override
   void initState() {
     super.initState();
-    // 마커 키들 초기화
-    _initializeMarkerKeys();
     // 시작 시 현재 위치를 가져와 카메라를 이동
     _getCurrentLocation();
     // Firestore에서 리뷰 데이터 가져오기
     _loadReviewsFromFirestore();
+    // 초기 더미 데이터 기준으로도 아이콘 준비
+    _prepareCustomMarkersForFriends(
+      _collectFriendNamesFromLocations(_dummyLocations),
+    );
   }
 
-  /// 마커 키들 초기화
-  void _initializeMarkerKeys() {
-    final friends = ['기노은', '권하민', '정태주', '박예은', '이찬민', '김철수', '이영희', '박민수'];
-    for (final friend in friends) {
-      _markerKeys[friend] = GlobalKey();
+  /// 현재 로드된 위치 데이터에서 친구 이름 수집
+  Set<String> _collectFriendNamesFromLocations(List<MapLocation> locations) {
+    final names = <String>{};
+    for (final loc in locations) {
+      for (final r in loc.reviews) {
+        names.add(r.friendName);
+      }
     }
+    return names;
+  }
 
-    // 빌드 완료 후 마커 이미지 생성
+  /// 실제 데이터에 맞춰 마커 키/비트맵 생성 준비
+  void _prepareCustomMarkersForFriends(Set<String> friendNames) {
+    bool added = false;
+    for (final name in friendNames) {
+      if (!_markerKeys.containsKey(name)) {
+        _markerKeys[name] = GlobalKey();
+        added = true;
+      }
+    }
+    if (!added) return;
+    // 프레임 이후 비트맵 생성
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _generateMarkerBitmaps();
     });
@@ -306,22 +323,22 @@ class _MapScreenState extends State<MapScreen> {
   /// Firestore에서 리뷰 데이터를 가져와서 지도 위치로 변환
   Future<void> _loadReviewsFromFirestore() async {
     try {
-      setState(() {
-        _isLoadingReviews = true;
-      });
+      // 로딩 플래그 사용 안 함
 
       // Firestore에서 리뷰 데이터 가져오기
       final locations = await _mapService.loadReviewsFromFirestore();
 
       setState(() {
         _firestoreLocations = locations;
-        _isLoadingReviews = false;
       });
+
+      // 로드된 데이터 기준으로 커스텀 마커 준비
+      _prepareCustomMarkersForFriends(
+        _collectFriendNamesFromLocations(_firestoreLocations),
+      );
     } catch (e) {
       print('Firestore 리뷰 로딩 오류: $e');
-      setState(() {
-        _isLoadingReviews = false;
-      });
+      // 로딩 플래그 사용 안 함
     }
   }
 
@@ -332,19 +349,29 @@ class _MapScreenState extends State<MapScreen> {
         _isLocationLoading = true;
       });
 
-      final position = await _mapService.getCurrentLocation();
+      final pos = await _mapService.getCurrentLocation();
 
       setState(() {
-        _currentPosition = position;
+        _currentPosition = pos;
         _isLocationLoading = false;
+        _userHeadingDeg =
+            (pos == null || pos.heading.isNaN || pos.heading.isInfinite)
+            ? 0.0
+            : pos.heading; // 장치 헤딩 사용
       });
 
+      // 사용자 화살표 아이콘 생성/업데이트
+      _userArrowIcon = await _createUserArrowIcon(
+        _colorForProgress(_userProgress),
+        size: 80,
+      );
+
       // 지도 준비된 경우 현재 위치로 이동
-      if (position != null) {
+      if (pos != null) {
         _mapController?.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
+              target: LatLng(pos.latitude, pos.longitude),
               zoom: 15.0,
             ),
           ),
@@ -354,6 +381,63 @@ class _MapScreenState extends State<MapScreen> {
       debugPrint('현재 위치 가져오기 오류: $e');
       setState(() => _isLocationLoading = false);
     }
+  }
+
+  // 진행도(0~1)에 따른 색상 계산: 0% - DD3397, 50% - F56061, 100% - FEA441
+  Color _colorForProgress(double p) {
+    final pClamped = p.clamp(0.0, 1.0);
+    const c0 = Color(0xFFDD3397);
+    const c1 = Color(0xFFF56061);
+    const c2 = Color(0xFFFEA441);
+    if (pClamped <= 0.5) {
+      final t = pClamped * 2.0;
+      return _lerpColor(c0, c1, t);
+    } else {
+      final t = (pClamped - 0.5) * 2.0;
+      return _lerpColor(c1, c2, t);
+    }
+  }
+
+  Color _lerpColor(Color a, Color b, double t) {
+    return Color.fromARGB(
+      (a.alpha + (b.alpha - a.alpha) * t).round(),
+      (a.red + (b.red - a.red) * t).round(),
+      (a.green + (b.green - a.green) * t).round(),
+      (a.blue + (b.blue - a.blue) * t).round(),
+    );
+  }
+
+  // 사용자 화살표 아이콘 생성 (위쪽을 향하는 삼각형)
+  Future<BitmapDescriptor> _createUserArrowIcon(
+    Color color, {
+    double size = 80,
+  }) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final stroke = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    final double w = size;
+    final double h = size;
+    final Path path = Path();
+    // 삼각형 (위쪽을 향하는 화살)
+    path.moveTo(w / 2, 0); // 꼭짓점
+    path.lineTo(w, h); // 오른쪽 아래
+    path.lineTo(0, h); // 왼쪽 아래
+    path.close();
+    // 그림자 배경
+    canvas.drawShadow(path, Colors.black, 6.0, true);
+    // 채움 + 테두리
+    canvas.drawPath(path, paint);
+    canvas.drawPath(path, stroke);
+    final picture = recorder.endRecording();
+    final ui.Image img = await picture.toImage(w.toInt(), h.toInt());
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
   }
 
   /// 지도 생성 콜백: 컨트롤러 저장 + 현재 위치 이동
@@ -420,18 +504,24 @@ class _MapScreenState extends State<MapScreen> {
             },
           ),
         ),
-        // 현재 위치 상태 오버레이
-        CurrentLocationOverlay(
-          currentPosition: _currentPosition,
-          isLocationLoading: _isLocationLoading,
-        ),
+        // 현재 위치 상태 오버레이 제거됨
       ],
     );
   }
 
   /// Google Maps 마커 생성 (친구별 커스텀 이미지 마커)
   Set<Marker> _buildMapMarkers() {
-    return _getFilteredLocations().map((location) {
+    final locations = _getFilteredLocations();
+    debugPrint('📍 마커 생성 시작: ${locations.length}개 위치');
+    final markers = locations.map((location) {
+      // GPS 좌표 디버그 출력
+      debugPrint('📍 마커 생성: ${location.name}');
+      debugPrint(
+        '   좌표: ${location.latitude.toStringAsFixed(7)}, ${location.longitude.toStringAsFixed(7)}',
+      );
+      debugPrint('   리뷰 수: ${location.reviews.length}');
+      debugPrint('   첫 번째 리뷰 이미지: ${location.firstPhotoUrl}');
+
       return Marker(
         markerId: MarkerId(location.id),
         position: LatLng(location.latitude, location.longitude),
@@ -453,11 +543,31 @@ class _MapScreenState extends State<MapScreen> {
         zIndex: 1.0, // 마커 레이어 순서
       );
     }).toSet();
+
+    // 사용자 화살표 마커 추가
+    if (_currentPosition != null && _userArrowIcon != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('user-arrow'),
+          position: LatLng(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+          ),
+          icon: _userArrowIcon!,
+          flat: true,
+          anchor: const Offset(0.5, 0.7),
+          rotation: _userHeadingDeg, // 지도 기준 회전
+          zIndex: 2.0,
+        ),
+      );
+    }
+
+    return markers;
   }
 
   /// 상세 정보 바텀시트 표시 (인스타그램 스타일 피드)
   void _showLocationDetails(MapLocation location) {
-    final scrollController = ScrollController();
+    // 외부 스크롤 컨트롤러는 사용하지 않음 (아래 DraggableScrollableSheet 빌더의 컨트롤러 사용)
 
     showModalBottomSheet(
       context: context,
@@ -467,121 +577,140 @@ class _MapScreenState extends State<MapScreen> {
         initialChildSize: 0.6, // 중간 높이로 시작
         minChildSize: 0.4,
         maxChildSize: 0.95,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // 드래그 핸들과 높이 조절 버튼
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // 드래그 핸들
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    // 높이 조절 버튼들
-                    Row(
-                      children: [
-                        _buildHeightToggleButton('중간', 0.6, scrollController),
-                        const SizedBox(width: 8),
-                        _buildHeightToggleButton('전체', 0.95, scrollController),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+        builder: (context, scrollController) => LayoutBuilder(
+          builder: (context, constraints) {
+            final screenHeight = MediaQuery.of(context).size.height;
+            final fraction = constraints.maxHeight / screenHeight;
+            final bool isExpanded = fraction > 0.8; // 충분히 펼쳐졌을 때만 사진 표시
 
-              // 위치 이름과 상세 정보 (인스타그램 스타일)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  // 드래그 핸들과 높이 조절 버튼
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                location.name,
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _getLocationSnippet(location),
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                        // 드래그 핸들
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close, size: 24),
+                        const SizedBox(width: 20),
+                        // 높이 조절 버튼들
+                        Row(
+                          children: [
+                            _buildHeightToggleButton(
+                              '중간',
+                              0.6,
+                              scrollController,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildHeightToggleButton(
+                              '전체',
+                              0.95,
+                              scrollController,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.photo_library,
-                          color: Colors.grey[600],
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${location.reviews.length}개의 리뷰',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+                  ),
 
-              // 인스타그램 스타일 리뷰 피드
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: location.reviews.length,
-                  itemBuilder: (context, index) {
-                    final review = location.reviews[index];
-                    return _buildInstagramStyleReviewCard(review, index == 0);
-                  },
-                ),
+                  // 위치 이름과 상세 정보 (인스타그램 스타일)
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    location.name,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _getLocationSnippet(location),
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close, size: 24),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.photo_library,
+                              color: Colors.grey[600],
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${location.reviews.length}개의 리뷰',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // 인스타그램 스타일 리뷰 피드
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: location.reviews.length,
+                      itemBuilder: (context, index) {
+                        final review = location.reviews[index];
+                        return _buildInstagramStyleReviewCard(
+                          review,
+                          isExpanded,
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
   /// 인스타그램 스타일 리뷰 카드
-  Widget _buildInstagramStyleReviewCard(Review review, bool isFirst) {
+  Widget _buildInstagramStyleReviewCard(Review review, bool isExpanded) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -654,74 +783,73 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
 
-          // 사진
-          Container(
-            width: double.infinity,
-            height: 300,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                review.photoUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.error, color: Colors.red, size: 50),
-                  );
-                },
+          // 사진 (펼쳐졌을 때만 표시)
+          if (isExpanded)
+            Container(
+              width: double.infinity,
+              height: 300,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  review.photoUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[200],
+                      child: const Icon(
+                        Icons.error,
+                        color: Colors.red,
+                        size: 50,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
 
-          // 액션 버튼들
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.favorite_border, size: 24),
-                  color: Colors.grey[700],
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.chat_bubble_outline, size: 24),
-                  color: Colors.grey[700],
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.send, size: 24),
-                  color: Colors.grey[700],
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.bookmark_border, size: 24),
-                  color: Colors.grey[700],
-                ),
-              ],
-            ),
-          ),
-
-          // 좋아요 수
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              '좋아요 12개',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+          // 액션 버튼들 (펼쳐졌을 때만 표시)
+          if (isExpanded)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.favorite_border, size: 24),
+                    color: Colors.grey[700],
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.chat_bubble_outline, size: 24),
+                    color: Colors.grey[700],
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.send, size: 24),
+                    color: Colors.grey[700],
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.bookmark_border, size: 24),
+                    color: Colors.grey[700],
+                  ),
+                ],
               ),
             ),
-          ),
 
-          // 리뷰 코멘트 (있는 경우에만)
+          // 리뷰 코멘트 (항상 텍스트는 보이되, 접혔을 때는 2줄로 줄임)
           if (review.comment != null && review.comment!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: RichText(
+                maxLines: isExpanded ? null : 2,
+                overflow: isExpanded
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 text: TextSpan(
                   style: DefaultTextStyle.of(context).style,
                   children: [
@@ -780,38 +908,101 @@ class _MapScreenState extends State<MapScreen> {
     }).toList();
   }
 
-  /// 하단 네비게이션 토글
-  void _toggleBottomNavigation() {
-    setState(() {
-      _showBottomNavigation = !_showBottomNavigation;
-    });
+  /// 네비게이션 아이콘(아이콘만, 그라디언트 배경)
+  Widget _buildGradientNav() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      color: Colors.transparent,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 확장 상태일 때 표시되는 개별 원형 버튼들
+          if (_navExpanded) ...[
+            const SizedBox(height: 4),
+            _buildCircleIcon(
+              icon: Icons.settings,
+              tooltip: '설정',
+              onTap: () {
+                Navigator.of(
+                  context,
+                ).pushReplacementNamed('/friends-manage'); // 임시 설정
+                setState(() => _navExpanded = false);
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildCircleIcon(
+              icon: Icons.diamond,
+              tooltip: '상점',
+              onTap: () {
+                Navigator.of(context).pushReplacementNamed('/shopping');
+                setState(() => _navExpanded = false);
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildCircleIcon(
+              icon: Icons.camera_alt,
+              tooltip: '카메라',
+              onTap: () {
+                Navigator.of(
+                  context,
+                ).pushReplacementNamed('/main', arguments: {'initialTab': 0});
+                setState(() => _navExpanded = false);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // 항상 보이는 세로 ... 버튼(원형)
+          _buildCircleIcon(
+            icon: Icons.more_vert,
+            tooltip: _navExpanded ? '닫기' : '열기',
+            onTap: () => setState(() => _navExpanded = !_navExpanded),
+          ),
+        ],
+      ),
+    );
   }
 
-  /// 네비게이션 아이템 생성
-  Widget _buildNavigationItem(IconData icon, String label, int tabIndex) {
-    return InkWell(
-      onTap: () {
-        // 메인 페이지의 해당 탭으로 이동
-        Navigator.of(
-          context,
-        ).pushReplacementNamed('/main', arguments: {'initialTab': tabIndex});
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.grey[700], size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[700],
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+  /// 원형 아이콘 버튼 헬퍼
+  Widget _buildCircleIcon({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Colors.white,
+            Colors.black,
+          ], // 0%: white (bottom) -> 100%: black (top)
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.2),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Center(
+            child: Tooltip(
+              message: tooltip,
+              child: Icon(icon, color: Colors.white, size: 20),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -902,9 +1093,9 @@ class _MapScreenState extends State<MapScreen> {
           // 지도
           _buildCrossPlatformMap(),
 
-          // 상단 친구 필터
+          // 상단 친구 필터 (조금 아래로 내림)
           Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
+            top: MediaQuery.of(context).padding.top + 56,
             left: 16,
             right: 16,
             child: FriendFilterWidget(
@@ -921,63 +1112,61 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
 
-          // 우측 하단 현재 위치 버튼
+          // 우측 하단 현재 위치 버튼 (그라데이션 적용)
           Positioned(
-            bottom: MediaQuery.of(context).padding.bottom + 16,
+            bottom: MediaQuery.of(context).padding.bottom + 80,
             right: 16,
-            child: FloatingActionButton.small(
-              onPressed: _getCurrentLocation,
-              backgroundColor: Colors.white,
-              child: Icon(
-                Icons.my_location,
-                color: _currentPosition != null ? Colors.green : Colors.grey,
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xFFDD3397),
+                    Color(0xFFF56061),
+                    Color(0xFFFEA441),
+                  ],
+                  stops: [0.0, 0.5, 1.0],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.18),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.5),
+                  width: 1.2,
+                ),
               ),
-            ),
-          ),
-
-          // 하단 네비게이션 토글 버튼
-          Positioned(
-            bottom: MediaQuery.of(context).padding.bottom + 16,
-            left: 16,
-            child: FloatingActionButton.small(
-              onPressed: _toggleBottomNavigation,
-              backgroundColor: Colors.white,
-              child: Icon(
-                _showBottomNavigation
-                    ? Icons.keyboard_arrow_down
-                    : Icons.keyboard_arrow_up,
-                color: Colors.grey[700],
-              ),
-            ),
-          ),
-
-          // 하단 네비게이션 메뉴 (세로로 표시)
-          if (_showBottomNavigation)
-            Positioned(
-              bottom: MediaQuery.of(context).padding.bottom + 80,
-              left: 16,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+              child: Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: _getCurrentLocation,
+                  child: const Center(
+                    child: Icon(
+                      Icons.my_location,
+                      color: Colors.white,
+                      size: 20,
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildNavigationItem(Icons.camera_alt, '카메라', 0),
-                    _buildNavigationItem(Icons.map, '지도', 1),
-                    _buildNavigationItem(Icons.store, '쇼핑', 2),
-                  ],
+                  ),
                 ),
               ),
             ),
+          ),
+
+          // 하단 네비게이션 (항상 표시, 아이콘만)
+          Positioned(
+            bottom: MediaQuery.of(context).padding.bottom + 80,
+            left: 16,
+            child: _buildGradientNav(),
+          ),
 
           // 마커 위젯들 (비트맵 변환을 위해 숨김 처리)
           ..._buildHiddenMarkerWidgets(),

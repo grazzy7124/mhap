@@ -111,7 +111,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('아이템을 구매했습니다! (${itemPrice}코인 차감)'),
+            content: Text('아이템을 구매했습니다! ($itemPrice코인 차감)'),
             backgroundColor: Colors.green,
           ),
         );
@@ -261,7 +261,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       SizedBox(width: 5),
-                      Image.asset('assets/images/coin.png', width: 22, height: 18),
+                      Image.asset(
+                        'assets/images/coin.png',
+                        width: 22,
+                        height: 18,
+                      ),
                       SizedBox(width: 5),
                       ShaderMask(
                         shaderCallback: (Rect bounds) {
@@ -276,7 +280,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                           ).createShader(bounds);
                         },
                         child: Text(
-                          '${currentCoin}',
+                          '$currentCoin',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -292,20 +296,41 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // 2열 그리드
-            crossAxisSpacing: 16.0, // 가로 간격
-            mainAxisSpacing: 16.0, // 세로 간격
-            childAspectRatio: 1.0, // 정사각형 비율
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // 2열 그리드
+                crossAxisSpacing: 16.0, // 가로 간격
+                mainAxisSpacing: 16.0, // 세로 간격
+                childAspectRatio: 1.0, // 정사각형 비율
+              ),
+              itemCount: _imageAssets.length,
+              itemBuilder: (context, index) {
+                return _buildImageItem(_imageAssets[index], index);
+              },
+            ),
           ),
-          itemCount: _imageAssets.length,
-          itemBuilder: (context, index) {
-            return _buildImageItem(_imageAssets[index], index);
-          },
-        ),
+
+          // 우측 스와이프 제스처로 맵 이동
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity != null &&
+                    details.primaryVelocity! > 400) {
+                  Navigator.pushReplacementNamed(
+                    context,
+                    '/main',
+                    arguments: {'initialTab': 1},
+                  );
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

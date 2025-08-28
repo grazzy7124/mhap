@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/rendering.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:ui' as ui;
 import '../models/map_models.dart';
 import '../services/map_service.dart';
 
@@ -66,7 +64,7 @@ class CurrentLocationOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: 50,
+      top: MediaQuery.of(context).padding.top + 56,
       right: 20,
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -140,18 +138,18 @@ class FriendFilterWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 60, // 전체보기와 친구 위젯 높이 통일
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.all(12),
         itemCount:
             2 + friends.where((f) => f != 'all').length, // 전체보기 + 친구관리 + 친구들
         itemBuilder: (context, index) {
           if (index == 0) {
             // 전체 보기 버튼
             return Container(
-              margin: const EdgeInsets.only(right: 12),
+              margin: const EdgeInsets.only(right: 8),
               child: GestureDetector(
                 onTap: () => onFriendSelected('all'),
                 child: Container(
@@ -182,7 +180,7 @@ class FriendFilterWidget extends StatelessWidget {
           } else if (index == 1) {
             // 친구 관리 버튼
             return Container(
-              margin: const EdgeInsets.only(right: 12),
+              margin: const EdgeInsets.only(right: 8),
               child: GestureDetector(
                 onTap: onFriendsManage,
                 child: Container(
@@ -210,7 +208,7 @@ class FriendFilterWidget extends StatelessWidget {
             final isSelected = selectedFriend == friend;
 
             return Container(
-              margin: const EdgeInsets.only(right: 12),
+              margin: const EdgeInsets.only(right: 8),
               child: GestureDetector(
                 onTap: () => onFriendSelected(friend),
                 child: Stack(
@@ -267,8 +265,8 @@ class FriendFilterWidget extends StatelessWidget {
           // 실제 프로필 이미지가 있는 경우
           return Image.network(
             snapshot.data!,
-            width: 60,
-            height: 60,
+            width: 50,
+            height: 50,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return _buildDefaultProfileIcon(friendName);
@@ -285,8 +283,8 @@ class FriendFilterWidget extends StatelessWidget {
   /// 기본 프로필 아이콘 생성
   Widget _buildDefaultProfileIcon(String friendName) {
     return Container(
-      width: 60,
-      height: 60,
+      width: 50,
+      height: 50,
       decoration: BoxDecoration(
         color: _getFriendColor(friendName),
         shape: BoxShape.circle,
@@ -469,7 +467,7 @@ class ReviewCard extends StatelessWidget {
           ),
 
           // 사진
-          Container(
+          SizedBox(
             width: double.infinity,
             height: 250,
             child: ClipRRect(

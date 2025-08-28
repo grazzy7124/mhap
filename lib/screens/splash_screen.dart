@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../firebase_options.dart';
 import '../services/firebase_service.dart';
+import '../services/map_service.dart';
 
 /// 스플래시 화면
 ///
@@ -63,6 +64,11 @@ class _SplashScreenState extends State<SplashScreen> {
       debugPrint('✅ Firebase 서비스 초기화 완료');
       _updateStatus('Firebase 서비스 준비 완료');
 
+      // GeoPoint 마이그레이션 (기존 문서 location 백필)
+      _updateStatus('데이터 정리 중...');
+      final updated = await MapService().migrateReviewsToGeoPoint();
+      debugPrint('GeoPoint 백필 업데이트 수: $updated');
+
       // 온보딩 완료 여부 확인
       if (mounted) {
         await _checkOnboardingStatus();
@@ -75,6 +81,14 @@ class _SplashScreenState extends State<SplashScreen> {
       if (mounted) {
         _navigateToOnboarding();
       }
+    }
+  }
+
+  void _updateStatus(String status) {
+    if (mounted) {
+      setState(() {
+        _statusText = status;
+      });
     }
   }
 
@@ -96,16 +110,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
       if (onboardingCompleted) {
         debugPrint('🚀 메인 페이지로 이동');
-        _updateStatus('메인 페이지로 이동 중...');
         _navigateToMainPage();
       } else {
         debugPrint('📱 온보딩 화면으로 이동');
-        _updateStatus('온보딩 화면으로 이동 중...');
         _navigateToOnboarding();
       }
     } catch (e) {
       debugPrint('❌ 온보딩 상태 확인 오류: $e');
-      _updateStatus('오류 발생: $e');
       if (mounted) {
         _navigateToOnboarding();
       }
@@ -124,14 +135,6 @@ class _SplashScreenState extends State<SplashScreen> {
   /// 온보딩으로 이동
   void _navigateToOnboarding() {
     Navigator.pushReplacementNamed(context, '/onboarding');
-  }
-
-  void _updateStatus(String status) {
-    if (mounted) {
-      setState(() {
-        _statusText = status;
-      });
-    }
   }
 
   @override

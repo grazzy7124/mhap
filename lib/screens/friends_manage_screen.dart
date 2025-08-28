@@ -10,7 +10,15 @@ class FriendsManageScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('친구 관리')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: '뒤로 가기',
+        ),
+        title: const Text('친구 관리'),
+        centerTitle: false,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

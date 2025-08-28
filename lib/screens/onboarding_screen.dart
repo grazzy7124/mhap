@@ -90,14 +90,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         await FirebaseService.initialize();
         debugPrint('Google 로그인 시 Firebase 초기화 완료');
       }
-      
+
       await FirebaseService.signInWithGoogle();
       await _afterLoginSuccess();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('구글 로그인 실패: ' + e.toString())));
+      ).showSnackBar(SnackBar(content: Text('구글 로그인 실패: $e')));
     } finally {
       if (mounted) {
         setState(() {
