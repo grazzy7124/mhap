@@ -38,6 +38,13 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
     30,  // item8 가격
   ];
 
+  // 구매한 아이콘 리스트 (예시)
+  final List<String> _purchasedIcons = [
+    'assets/images/icon1.png',
+    'assets/images/icon2.png',
+    'assets/images/icon3.png',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -129,18 +136,77 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('구매 확인'),
-          content: Text('이 아이템을 ${price} 코인으로 구매하시겠습니까?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('아니오'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('예'),
-            ),
-          ],
+          backgroundColor: Color(0xffC4C4C4),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('구매하시겠습니까?'),
+              SizedBox(height: 10),
+              Container(
+                height: 1, 
+                color: Color(0xff939393),
+              ),
+              SizedBox(height: 10),
+              // 예 버튼
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(true),
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '예',
+                      style: TextStyle(
+                        color: Color(0xff0040DD),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 6),
+              Container(
+                height: 1, 
+                width: MediaQuery.of(context).size.width * 0.6, // 명시적 너비 설정
+                color: Color(0xff939393),
+              ),
+              SizedBox(height: 6),
+              // 아니오 버튼
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(false),
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.6, // 명시적 너비 설정
+                  height: 44,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '아니오',
+                      style: TextStyle(
+                        color: Color(0xff0040DD),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // actions: [
+          //   TextButton(
+          //     onPressed: () => Navigator.of(context).pop(false),
+          //     child: const Text('아니오'),
+          //   ),
+          //   ElevatedButton(
+          //     onPressed: () => Navigator.of(context).pop(true),
+          //     child: const Text('예'),
+          //   ),
+          // ],
         );
       },
     );
@@ -313,6 +379,33 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 구매한 아이콘 아이템을 구성하는 메서드
+  Widget _buildPurchasedIconItem(String iconAsset, int index) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(color: Colors.grey.shade800, width: 1.0),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12.0),
+        child: Image.asset(
+          iconAsset,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey.shade800,
+              child: const Center(
+                child: Icon(Icons.error, color: Colors.red, size: 40.0),
+              ),
+            );
+          },
         ),
       ),
     );
