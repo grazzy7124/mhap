@@ -575,8 +575,10 @@ class _MapScreenState extends State<MapScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.6, // 중간 높이로 시작
-        minChildSize: 0.4,
-        maxChildSize: 0.95,
+        minChildSize: 0.3,     // 최소 높이 30%
+        maxChildSize: 0.95,    // 최대 높이 95%
+        snap: true,             // 스냅 기능 활성화
+        snapSizes: [0.3, 0.6, 0.95], // 스냅할 높이들 정의
         builder: (context, scrollController) => LayoutBuilder(
           builder: (context, constraints) {
             final screenHeight = MediaQuery.of(context).size.height;
@@ -596,32 +598,18 @@ class _MapScreenState extends State<MapScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // 드래그 핸들
+                        // 드래그 핸들 (더 명확하게)
                         Container(
-                          width: 40,
-                          height: 4,
+                          width: 50,
+                          height: 5,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
+                            color: Colors.grey[400],
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
                         const SizedBox(width: 20),
                         // 높이 조절 버튼들
-                        Row(
-                          children: [
-                            _buildHeightToggleButton(
-                              '중간',
-                              0.6,
-                              scrollController,
-                            ),
-                            const SizedBox(width: 8),
-                            _buildHeightToggleButton(
-                              '전체',
-                              0.95,
-                              scrollController,
-                            ),
-                          ],
-                        ),
+
                       ],
                     ),
                   ),
@@ -920,7 +908,7 @@ class _MapScreenState extends State<MapScreen> {
           if (_navExpanded) ...[
             const SizedBox(height: 4),
             _buildCircleIcon(
-              icon: Icons.settings,
+              image: Image.asset('assets/images/settings.png'),
               tooltip: '설정',
               onTap: () {
                 Navigator.of(
@@ -931,7 +919,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
             const SizedBox(height: 12),
             _buildCircleIcon(
-              icon: Icons.diamond,
+              image: Image.asset('assets/images/coin.png'),
               tooltip: '상점',
               onTap: () {
                 Navigator.of(context).pushReplacementNamed('/shopping');
@@ -940,7 +928,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
             const SizedBox(height: 12),
             _buildCircleIcon(
-              icon: Icons.camera_alt,
+              image: Image.asset('assets/images/camera.png'),
               tooltip: '카메라',
               onTap: () {
                 Navigator.of(
@@ -963,12 +951,16 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// 원형 아이콘 버튼 헬퍼
+  /// 원형 아이콘/이미지 버튼 헬퍼
   Widget _buildCircleIcon({
-    required IconData icon,
+    IconData? icon,
+    Widget? image,
     required String tooltip,
     required VoidCallback onTap,
   }) {
+    // icon과 image 중 하나는 반드시 제공되어야 함
+    assert(icon != null || image != null, 'icon 또는 image 중 하나는 반드시 제공되어야 합니다');
+    
     return Container(
       width: 52,
       height: 52,
@@ -1000,7 +992,15 @@ class _MapScreenState extends State<MapScreen> {
           child: Center(
             child: Tooltip(
               message: tooltip,
-              child: Icon(icon, color: Colors.white, size: 20),
+              child: icon != null 
+                ? Icon(icon, color: Colors.white, size: 20)
+                : image != null 
+                  ? SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: image,
+                    )
+                  : const SizedBox.shrink(),
             ),
           ),
         ),
@@ -1040,50 +1040,7 @@ class _MapScreenState extends State<MapScreen> {
     return '포항시 북구';
   }
 
-  /// 높이 조절 버튼 생성
-  Widget _buildHeightToggleButton(
-    String label,
-    double height,
-    ScrollController scrollController,
-  ) {
-    return GestureDetector(
-      onTap: () {
-        // DraggableScrollableSheet의 높이를 동적으로 조절
-        // 이 기능은 DraggableScrollableSheet에서 직접 지원하지 않으므로
-        // 대신 스크롤 위치를 조절하여 효과를 만듭니다
-        if (height == 0.6) {
-          // 중간 높이로 스크롤
-          scrollController.animateTo(
-            scrollController.position.maxScrollExtent * 0.3,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        } else {
-          // 전체 높이로 스크롤
-          scrollController.animateTo(
-            scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[700],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
