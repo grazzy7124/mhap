@@ -477,7 +477,7 @@ class _CameraScreenState extends State<CameraScreen> {
               // 상단 툴바
               Container(
                 padding: const EdgeInsets.only(top: 120, left: 20, right: 20),
-              ),
+              ), 
 
               // 카메라 프리뷰 영역
               Expanded(
