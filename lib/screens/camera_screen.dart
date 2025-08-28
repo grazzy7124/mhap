@@ -476,7 +476,6 @@ class _CameraScreenState extends State<CameraScreen> {
             children: [
               // 상단 툴바
               Container(
-                color: Colors.amber,
                 padding: const EdgeInsets.only(top: 120, left: 20, right: 20),
               ),
 
