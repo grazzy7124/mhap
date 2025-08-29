@@ -14,7 +14,7 @@ class FriendService {
   /// 사용자 검색 (UID로)
   static Future<UserSearchResult?> searchUserByUid(String uid) async {
     if (uid.isEmpty) return null;
-    
+
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (!doc.exists) return null;
@@ -22,11 +22,9 @@ class FriendService {
       final currentUid = currentUserId;
       if (currentUid == null) return null;
 
-
-
       // 이미 친구인지 확인
       final isAlreadyFriend = await _isAlreadyFriend(currentUid, uid);
-      
+
       // 이미 요청을 보냈는지 확인
       final hasPendingRequest = await _hasPendingRequest(currentUid, uid);
 
@@ -40,7 +38,6 @@ class FriendService {
       return null;
     }
   }
-
 
   /// 친구 요청 보내기
   static Future<bool> sendFriendRequest(String toUserId) async {
@@ -59,7 +56,10 @@ class FriendService {
       }
 
       // 사용자 정보 가져오기
-      final userDoc = await _firestore.collection('users').doc(currentUid).get();
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(currentUid)
+          .get();
       if (!userDoc.exists) throw Exception('사용자 정보를 찾을 수 없습니다.');
 
       final userData = userDoc.data() as Map<String, dynamic>;
@@ -90,9 +90,9 @@ class FriendService {
     try {
       final requestRef = _firestore.collection('friendRequests').doc(requestId);
       final requestDoc = await requestRef.get();
-      
+
       if (!requestDoc.exists) return false;
-      
+
       final requestData = requestDoc.data() as Map<String, dynamic>;
       if (requestData['toUserId'] != currentUid) return false;
 
@@ -103,13 +103,19 @@ class FriendService {
       });
 
       // 현재 사용자 정보 가져오기
-      final currentUserDoc = await _firestore.collection('users').doc(currentUid).get();
+      final currentUserDoc = await _firestore
+          .collection('users')
+          .doc(currentUid)
+          .get();
       final currentUserData = currentUserDoc.data() as Map<String, dynamic>;
 
       // 친구 관계 생성 (단순한 구조)
       // friends 컬렉션에 친구 관계 문서 생성
-      final friendshipId = _generateFriendshipId(currentUid, requestData['fromUserId']);
-      
+      final friendshipId = _generateFriendshipId(
+        currentUid,
+        requestData['fromUserId'],
+      );
+
       await _firestore.collection('friends').doc(friendshipId).set({
         'user1Id': currentUid,
         'user1DisplayName': currentUserData['displayName'] ?? '사용자',
@@ -119,6 +125,7 @@ class FriendService {
         'user2PhotoURL': requestData['fromUserPhotoURL'],
         'createdAt': FieldValue.serverTimestamp(),
       });
+
       return true;
     } catch (e) {
       print('친구 요청 수락 오류: $e');
@@ -134,9 +141,9 @@ class FriendService {
     try {
       final requestRef = _firestore.collection('friendRequests').doc(requestId);
       final requestDoc = await requestRef.get();
-      
+
       if (!requestDoc.exists) return false;
-      
+
       final requestData = requestDoc.data() as Map<String, dynamic>;
       if (requestData['toUserId'] != currentUid) return false;
 
@@ -180,15 +187,17 @@ class FriendService {
         .snapshots()
         .asyncMap((snapshot) async {
           final friends = <Friend>[];
-          
+
           for (final doc in snapshot.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            friends.add(Friend(
-              uid: data['user2Id'],
-              displayName: data['user2DisplayName'] ?? '',
-              photoURL: data['user2PhotoURL'],
-              addedAt: (data['createdAt'] as Timestamp).toDate(),
-            ));
+            final data = doc.data();
+            friends.add(
+              Friend(
+                uid: data['user2Id'],
+                displayName: data['user2DisplayName'] ?? '',
+                photoURL: data['user2PhotoURL'],
+                addedAt: (data['createdAt'] as Timestamp).toDate(),
+              ),
+            );
           }
 
           // user2Id가 currentUid인 경우도 처리
@@ -196,15 +205,17 @@ class FriendService {
               .collection('friends')
               .where('user2Id', isEqualTo: currentUid)
               .get();
-          
+
           for (final doc in reverseSnapshot.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            friends.add(Friend(
-              uid: data['user1Id'],
-              displayName: data['user1DisplayName'] ?? '',
-              photoURL: data['user1PhotoURL'],
-              addedAt: (data['createdAt'] as Timestamp).toDate(),
-            ));
+            final data = doc.data();
+            friends.add(
+              Friend(
+                uid: data['user1Id'],
+                displayName: data['user1DisplayName'] ?? '',
+                photoURL: data['user1PhotoURL'],
+                addedAt: (data['createdAt'] as Timestamp).toDate(),
+              ),
+            );
           }
 
           return friends;
@@ -222,9 +233,11 @@ class FriendService {
         .where('status', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => FriendRequest.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => FriendRequest.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // ==================== Private Methods ====================
@@ -239,7 +252,10 @@ class FriendService {
   static Future<bool> _isAlreadyFriend(String uid1, String uid2) async {
     try {
       final friendshipId = _generateFriendshipId(uid1, uid2);
-      final doc = await _firestore.collection('friends').doc(friendshipId).get();
+      final doc = await _firestore
+          .collection('friends')
+          .doc(friendshipId)
+          .get();
       return doc.exists;
     } catch (e) {
       return false;

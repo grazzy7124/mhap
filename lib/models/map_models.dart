@@ -36,6 +36,10 @@ class Review {
   final String photoUrl;
   final DateTime timestamp;
   final String? comment;
+  final String? placeName;  // 장소 이름
+  final int? rating;        // 별점 (1-5)
+  final int likes;          // 좋아요 수
+  final int comments;       // 댓글 수
 
   Review({
     required this.id,
@@ -43,6 +47,10 @@ class Review {
     required this.photoUrl,
     required this.timestamp,
     this.comment,
+    this.placeName,
+    this.rating,
+    this.likes = 0,
+    this.comments = 0,
   });
 }
 

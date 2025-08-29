@@ -40,30 +40,49 @@ class ReviewService {
     final reviewId = '${_uid}_$placeId';
     final docRef = _reviewDoc(reviewId);
 
-    // 사진 먼저 업로드
-    final photoUrl = await _uploadPhoto(reviewId, photoFile);
+    try {
+      print('📝 리뷰 생성 시작...');
+      print('👤 사용자: $_uid');
+      print('📍 장소: $placeName');
+      print('⭐ 별점: $rating');
+      print('🌍 위치: ${lat.toStringAsFixed(7)}, ${lng.toStringAsFixed(7)}');
 
-    final now = FieldValue.serverTimestamp();
+      // 사진 먼저 업로드
+      print('🖼️ Firebase Storage 업로드 시작...');
+      final photoUrl = await _uploadPhoto(reviewId, photoFile);
+      print('✅ Firebase Storage 업로드 완료: $photoUrl');
 
-    await docRef.set({
-      'authorId': _uid,
-      'placeId': placeId,
-      'placeName': placeName,
+      final now = FieldValue.serverTimestamp();
 
-      // GeoPoint 메인 필드 (단일 저장)
-      'location': GeoPoint(lat, lng),
+      await docRef.set({
+        'authorId': _uid,
+        'placeId': placeId,
+        'placeName': placeName,
 
-      // 메타데이터
-      'geohash': geohash,
-      'rating': rating,
-      'text': text,
-      'photoUrl': photoUrl,
-      'visibility': 'friends',
-      'createdAt': now,
-      'updatedAt': now,
-    }, SetOptions(merge: false));
+        // GeoPoint 메인 필드 (단일 저장)
+        'location': GeoPoint(lat, lng),
 
-    debugPrint('📍 리뷰 생성 완료 - GeoPoint 저장: (${lat.toStringAsFixed(7)}, ${lng.toStringAsFixed(7)})');
+        // 메타데이터
+        'geohash': geohash,
+        'rating': rating,
+        'text': text,
+        'photoUrl': photoUrl,
+        'visibility': 'friends',
+        'createdAt': now,
+        'updatedAt': now,
+        
+        // 추가 필드들
+        'likes': 0,
+        'comments': 0,
+      }, SetOptions(merge: false));
+
+      print('✅ 리뷰 생성 완료 - GeoPoint 저장: (${lat.toStringAsFixed(7)}, ${lng.toStringAsFixed(7)})');
+      print('📸 이미지 URL: $photoUrl');
+      
+    } catch (e) {
+      print('❌ 리뷰 생성 실패: $e');
+      rethrow; // 오류를 상위로 전파
+    }
   }
 
   /// 리뷰 수정 (본문/별점/사진 교체)

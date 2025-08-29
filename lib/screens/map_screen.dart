@@ -60,6 +60,10 @@ class _MapScreenState extends State<MapScreen> {
               'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=400&fit=crop',
           comment:
               '바다가 보이는 아름다운 카페예요! ☕ 포항 해변의 일몰을 보면서 마시는 커피는 정말 특별했어요. 인테리어도 바다 테마로 꾸며져 있어서 분위기가 너무 좋았습니다. 특히 2층 테라스에서 마시는 아메리카노는 정말 최고였어요!',
+          placeName: '포항 해변 카페',
+          rating: 5,
+          likes: 12,
+          comments: 3,
         ),
         Review(
           id: 'review2',
@@ -69,6 +73,10 @@ class _MapScreenState extends State<MapScreen> {
               'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=400&fit=crop',
           comment:
               '커피 맛있고 분위기 좋아요 🌊 바다 소리를 들으면서 마시는 커피는 정말 힐링이 되었어요. 커피 원두도 신선하고, 바리스타의 실력도 훌륭해서 맛있는 커피를 마실 수 있었습니다. 친구들과 함께 가기 좋은 곳이에요!',
+          placeName: '포항 해변 카페',
+          rating: 4,
+          likes: 8,
+          comments: 1,
         ),
       ],
     ),
@@ -85,6 +93,10 @@ class _MapScreenState extends State<MapScreen> {
           photoUrl:
               'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop',
           comment: '신선한 해산물이 정말 맛있어요 🦐',
+          placeName: '포항 맛집 거리',
+          rating: 5,
+          likes: 15,
+          comments: 2,
         ),
         Review(
           id: 'review4',
@@ -93,6 +105,10 @@ class _MapScreenState extends State<MapScreen> {
           photoUrl:
               'https://images.unsplash.com/photo-1576402187878-974f70c890a5?w=400&h=400&fit=crop',
           comment: '가격 대비 정말 맛있어요! 💕',
+          placeName: '포항 맛집 거리',
+          rating: 4,
+          likes: 6,
+          comments: 0,
         ),
       ],
     ),
@@ -575,9 +591,9 @@ class _MapScreenState extends State<MapScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.6, // 중간 높이로 시작
-        minChildSize: 0.3,     // 최소 높이 30%
-        maxChildSize: 0.95,    // 최대 높이 95%
-        snap: true,             // 스냅 기능 활성화
+        minChildSize: 0.3, // 최소 높이 30%
+        maxChildSize: 0.95, // 최대 높이 95%
+        snap: true, // 스냅 기능 활성화
         snapSizes: [0.3, 0.6, 0.95], // 스냅할 높이들 정의
         builder: (context, scrollController) => LayoutBuilder(
           builder: (context, constraints) {
@@ -608,8 +624,8 @@ class _MapScreenState extends State<MapScreen> {
                           ),
                         ),
                         const SizedBox(width: 20),
-                        // 높이 조절 버튼들
 
+                        // 높이 조절 버튼들
                       ],
                     ),
                   ),
@@ -958,7 +974,7 @@ class _MapScreenState extends State<MapScreen> {
   }) {
     // icon과 image 중 하나는 반드시 제공되어야 함
     assert(icon != null || image != null, 'icon 또는 image 중 하나는 반드시 제공되어야 합니다');
-    
+
     return Container(
       width: 52,
       height: 52,
@@ -990,14 +1006,10 @@ class _MapScreenState extends State<MapScreen> {
           child: Center(
             child: Tooltip(
               message: tooltip,
-              child: icon != null 
-                ? Icon(icon, color: Colors.white, size: 20)
-                : image != null 
-                  ? SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: image,
-                    )
+              child: icon != null
+                  ? Icon(icon, color: Colors.white, size: 20)
+                  : image != null
+                  ? SizedBox(width: 24, height: 24, child: image)
                   : const SizedBox.shrink(),
             ),
           ),
@@ -1037,8 +1049,6 @@ class _MapScreenState extends State<MapScreen> {
     if (location.name.contains('포항 대학교')) return '포항시 북구 대학로 147';
     return '포항시 북구';
   }
-
-
 
   @override
   Widget build(BuildContext context) {
