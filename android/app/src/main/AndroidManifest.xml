@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     
     <application
-        android:label="whatapp"
+        android:label="뭐햅"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         
