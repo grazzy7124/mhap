@@ -76,19 +76,63 @@ class MapService {
             locationGroups[locationKey] = [];
           }
 
+          // 이미지 URL 추출 및 검증
+          String? photoUrl;
+          if (data['imageUrl'] != null) {
+            photoUrl = data['imageUrl'] as String;
+            debugPrint('🖼️ 이미지 URL 확인: $photoUrl (문서: ${doc.id})');
+
+            // Firebase Storage URL인지 확인
+            if (photoUrl.startsWith(
+              'https://firebasestorage.googleapis.com/',
+            )) {
+              debugPrint('✅ Firebase Storage URL 확인됨');
+            } else if (photoUrl.startsWith('/var/mobile/') ||
+                photoUrl.startsWith('/data/') ||
+                photoUrl.startsWith('/Documents/')) {
+              debugPrint('📱 로컬 파일 경로 감지됨: $photoUrl');
+              // 로컬 경로는 그대로 사용 (이제 로컬에서도 표시 가능)
+              debugPrint('💾 로컬 이미지 사용: $photoUrl');
+            } else if (photoUrl.startsWith('http')) {
+              debugPrint('✅ 외부 URL 확인됨: $photoUrl');
+            } else if (photoUrl.isNotEmpty) {
+              debugPrint('⚠️ 알 수 없는 URL 형식: $photoUrl');
+              // URL이 유효하지 않으면 빈 문자열로 처리
+              photoUrl = '';
+            } else {
+              debugPrint('⚠️ 빈 이미지 URL');
+              photoUrl = '';
+            }
+          } else if (data['photoUrl'] != null) {
+            photoUrl = data['photoUrl'] as String;
+            debugPrint('🖼️ photoUrl 필드 확인: $photoUrl (문서: ${doc.id})');
+          } else {
+            debugPrint('⚠️ 이미지 URL이 없음 (문서: ${doc.id})');
+            photoUrl = ''; // 빈 문자열로 설정
+          }
+
           locationGroups[locationKey]!.add(
             Review(
               id: doc.id,
               friendName:
-                  data['userEmail']?.toString().split('@')[0] ??
+                  data['userName'] ?? // ReviewFormScreen에서 저장하는 필드명
+                  data['userEmail']?.toString().split('@')[0] ?? // 실제 저장되는 필드
                   data['authorId']?.toString().split('@')[0] ??
                   'Unknown',
-              photoUrl:
-                  data['photoUrl'] ?? data['imageUrl'] ?? '', // 이미지 URL 필드명 통합
+              photoUrl: photoUrl ?? '', // null 안전 처리
               timestamp:
-                  (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+                  (data['createdAt'] as Timestamp?)?.toDate() ?? // 실제 저장되는 필드
+                  (data['timestamp'] as Timestamp?)?.toDate() ??
+                  DateTime.now(),
               comment:
-                  data['text'] ?? data['reviewText'] ?? '', // 리뷰 텍스트 필드명 통합
+                  data['review'] ?? // ReviewFormScreen에서 저장하는 필드명
+                  data['text'] ??
+                  data['reviewText'] ??
+                  '', // 리뷰 텍스트 필드명 통합
+              placeName: data['placeName'] as String?, // 장소 이름
+              rating: data['rating'] as int?, // 별점
+              likes: data['likes'] as int? ?? 0, // 좋아요 수
+              comments: data['comments'] as int? ?? 0, // 댓글 수
             ),
           );
         } else {
@@ -103,15 +147,17 @@ class MapService {
           final latitude = double.parse(coordinates[0]);
           final longitude = double.parse(coordinates[1]);
 
-          // 장소 이름은 첫 번째 리뷰의 장소 이름 사용
-          final placeName = reviews.first.comment?.isNotEmpty == true
-              ? reviews.first.comment!.substring(
-                  0,
-                  reviews.first.comment!.length > 10
-                      ? 10
-                      : reviews.first.comment!.length,
-                )
-              : '리뷰된 장소';
+          // 장소 이름은 첫 번째 리뷰의 장소 이름 사용 (우선순위: placeName > comment > 기본값)
+          final placeName =
+              reviews.first.placeName ??
+              (reviews.first.comment?.isNotEmpty == true
+                  ? reviews.first.comment!.substring(
+                      0,
+                      reviews.first.comment!.length > 10
+                          ? 10
+                          : reviews.first.comment!.length,
+                    )
+                  : '리뷰된 장소');
 
           locations.add(
             MapLocation(

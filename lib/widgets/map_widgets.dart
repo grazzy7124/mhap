@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/map_models.dart';
 import '../services/map_service.dart';
@@ -475,30 +474,97 @@ class ReviewCard extends StatelessWidget {
                 top: Radius.circular(0),
                 bottom: Radius.circular(12),
               ),
-              child: Image.network(
-                review.photoUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator()),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.error, color: Colors.red, size: 50),
-                  );
-                },
-              ),
+              child: review.photoUrl.isNotEmpty
+                  ? Image.network(
+                      review.photoUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint(
+                          '🖼️ 이미지 로딩 실패: ${review.photoUrl} - $error',
+                        );
+                        return Container(
+                          color: Colors.grey[200],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error,
+                                color: Colors.red,
+                                size: 30,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '이미지 로딩 실패',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey,
+                          size: 50,
+                        ),
+                      ),
+                    ),
             ),
           ),
+
+          // 장소 이름과 별점
+          if (review.placeName != null || review.rating != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  // 장소 이름
+                  if (review.placeName != null)
+                    Expanded(
+                      child: Text(
+                        review.placeName!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  // 별점
+                  if (review.rating != null)
+                    Row(
+                      children: List.generate(5, (index) {
+                        final isSelected = index < review.rating!;
+                        return Icon(
+                          isSelected ? Icons.star : Icons.star_border,
+                          size: 18,
+                          color: isSelected ? Colors.amber : Colors.grey[400],
+                        );
+                      }),
+                    ),
+                ],
+              ),
+            ),
 
           // 리뷰 코멘트 (있는 경우에만)
           if (review.comment != null && review.comment!.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
                 review.comment!,
                 style: const TextStyle(
@@ -508,6 +574,102 @@ class ReviewCard extends StatelessWidget {
                 ),
               ),
             ),
+
+          // 좋아요, 댓글, 공유, 저장 버튼
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // 좋아요
+                GestureDetector(
+                  onTap: () {
+                    // TODO: 좋아요 기능 구현
+                    print('좋아요: ${review.id}');
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.favorite_border,
+                        size: 20,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${review.likes}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                // 댓글
+                GestureDetector(
+                  onTap: () {
+                    // TODO: 댓글 기능 구현
+                    print('댓글: ${review.id}');
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline,
+                        size: 20,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${review.comments}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                // 공유
+                GestureDetector(
+                  onTap: () {
+                    // TODO: 공유 기능 구현
+                    print('공유: ${review.id}');
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.share, size: 20, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        '공유',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                // 저장
+                GestureDetector(
+                  onTap: () {
+                    // TODO: 저장 기능 구현
+                    print('저장: ${review.id}');
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.bookmark_border,
+                        size: 20,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '저장',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

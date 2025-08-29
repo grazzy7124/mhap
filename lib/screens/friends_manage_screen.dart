@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/friend_models.dart';
 import '../services/friend_service.dart';
 

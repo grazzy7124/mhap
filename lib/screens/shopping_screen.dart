@@ -127,16 +127,13 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
   /// 구매 가능한 아이템 목록을 반환 (구매한 아이템 제외)
   List<Map<String, dynamic>> _getAvailableItems() {
     List<Map<String, dynamic>> availableItems = [];
-    
+
     for (int i = 0; i < _imageAssets.length; i++) {
       if (!_purchasedItemIndexes.contains(i)) {
-        availableItems.add({
-          'imageAsset': _imageAssets[i],
-          'originalIndex': i,
-        });
+        availableItems.add({'imageAsset': _imageAssets[i], 'originalIndex': i});
       }
     }
-    
+
     return availableItems;
   }
 
@@ -153,7 +150,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
           if (!newPurchasedItems.contains(itemIndex)) {
             newPurchasedItems.add(itemIndex);
           }
-          
+
           // Firebase에 구매한 아이템 목록과 코인 업데이트
           await _firestore.collection('users').doc(user.uid).update({
             'purchasedItems': newPurchasedItems,
@@ -170,7 +167,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('아이템을 구매했습니다! (${itemPrice}코인 차감)'),
+                content: Text('아이템을 구매했습니다! ($itemPrice코인 차감)'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -186,7 +183,6 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             ),
           );
         }
-
       }
     } else {
       // 코인 부족 메시지
@@ -382,7 +378,10 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                 itemCount: _getAvailableItems().length,
                 itemBuilder: (context, index) {
                   final availableItem = _getAvailableItems()[index];
-                  return _buildImageItem(availableItem['imageAsset'], availableItem['originalIndex']);
+                  return _buildImageItem(
+                    availableItem['imageAsset'],
+                    availableItem['originalIndex'],
+                  );
                 },
               ),
       ),
@@ -509,11 +508,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.shopping_bag,
-            size: 80,
-            color: Colors.grey.shade600,
-          ),
+          Icon(Icons.shopping_bag, size: 80, color: Colors.grey.shade600),
           SizedBox(height: 24),
           Text(
             '모든 아이템을 구매했습니다!',
@@ -526,10 +521,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
           SizedBox(height: 16),
           Text(
             '새로운 아이템이 추가될 때까지 기다려주세요.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade400,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade400),
             textAlign: TextAlign.center,
           ),
         ],
